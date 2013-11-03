@@ -9,6 +9,7 @@ MiniBus offers the following features:
 * Send to one or more queues (local and/or remote)
 * Read messages synchronously or asynchronously
 * Choice of XML or JSON serialization
+* Automatic Message Distribution for load balancing
 * Enlist in ambient transactions
 * Configurable automatic retries
 * Move to error queue on failure
@@ -41,7 +42,8 @@ IBus bus = new BusBuilder()
     .DefineWriteQueue("MiniBus.messages3")
     .CreateLocalQueuesAutomatically()
     .EnlistInAmbientTransactions()
-    .JsonSerialization()
+    .AutoDistributeOnSend()
+	.JsonSerialization()
     .CreateBus();
 	
 // create your message type
@@ -153,17 +155,21 @@ In the sending application, you can tell MiniBus which queue(s) to send the mess
 
 Queues can be on the same machine as the application or on a remote machine. Remote queues are declared in each of the Define&lt;whatever&gt;Queue methods by using the @ syntax. For example <strong>myqueue@remotepc</strong>. Local queues do not include the @ symbol or machine name. If you declare local queues and they do not exist, calling the CreateLocalQueuesAutomatically method will ensure the queues are created for you before you use the bus to send or receive messages.
 
-##### * EnlistInAmbientTransactions
-
-Sometimes you only want a message to be sent or received as part of a larger transaction, for example, if you are also inserting/updating a row in a database. This option ensures that the operations are treated atomically. In other words, when sending, the message will only be sent if the database operation succeeds. Conversely, when receiving, the message will only be removed if the database operation succeeds. A failure of the database during a read will cause the message to be moved to the error queue.
-
 ##### * JsonSerialization
 
 By default, MiniBus serializes your messages as Xml. If you would rather use JSON then call this method on the BusBuilder object. When sending a message using XML serialization you'll need to share the message type between the sending and receiving applications as the type is embedded in the XML body as the root element. However, JSON serialization is much looser. There is no requirement to share the type between both endpoints. Deserialization of a message using JSON only looks for matching members between the data in the message body and the type you specify as the target for the deserialization process. Basically this means you can just write a seperate class in each application that look the same (or similar) for both serialization and deserialization without needing to share a dll containing a type.
 
+##### * EnlistInAmbientTransactions
+
+Sometimes you only want a message to be sent or received as part of a larger transaction, for example, if you are also inserting/updating a row in a database. This option ensures that the operations are treated atomically. In other words, when sending, the message will only be sent if the database operation succeeds. Conversely, when receiving, the message will only be removed if the database operation succeeds. A failure of the database during a read will cause the message to be moved to the error queue.
+
 ##### * NumberOfRetries
 
 MiniBus by default will move a failed message to the error queue as soon as an error is detected. Sometimes, perhaps due to network latency in a web service call, the operation would succeed if tried again. The NumberOfRetries method let's you specify how many times MiniBus should retry the operation before giving up and moving the message to the error queue.
+
+##### * AutoDistributeOnSend
+
+By default, when sending messages MiniBus will send the same message to all the writeQueues you have defined. Sometimes though you may want to evenly distribute messages bewteen all the queues in order to achieve load balancing with the receivers. Setting this option will cause MiniBus to send a message to a different queue on each successive call to Send.
 
 ## Building the Source
 

@@ -8,6 +8,7 @@ using MiniBus.Exceptions;
 using MiniBus.Handlers;
 using MiniBus.Context;
 using MiniBus.Formatters;
+using MiniBus.MessageQueues;
 
 namespace MiniBus
 {
@@ -19,7 +20,7 @@ namespace MiniBus
             _logger = logger;
             _errorQueue = errorQueue;
             _readQueue = readQueue;
-            _writeQueues = writeQueues;
+            _writeQueueManager = new WriteQueueManager(_config.AutoDistributeOnSend, writeQueues);
         }      
 
         /// <summary>
@@ -28,10 +29,10 @@ namespace MiniBus
         /// </summary>
         public void Send<T>(T dto)
         {
-            if (!_writeQueues.Any())
+            if (!_writeQueueManager.HasWriteQueues)
                 throw new BusException("Bus has not been configured for sending messages. Did you forget to call DefineWriteQueue on BusBuilder?");
 
-            foreach (var writeQueue in _writeQueues)
+            foreach (var writeQueue in _writeQueueManager.GetWriteQueues())
             {
                 var message = CreateMsmqMessageFromDto(dto);
                 var context = new WriteMessageContext(writeQueue);
@@ -133,7 +134,7 @@ namespace MiniBus
                 Label = Guid.NewGuid().ToString(),
             };
         }
-
+        
         ~Bus()
         {
             Dispose(false);
@@ -151,11 +152,7 @@ namespace MiniBus
 
             if (disposing)
             {
-                foreach (var writeQueue in _writeQueues)
-                {
-                    if (writeQueue != null)
-                        writeQueue.Dispose();
-                }
+                _writeQueueManager.Dispose();
 
                 if (_readQueue != null)
                     _readQueue.Dispose();
@@ -166,7 +163,7 @@ namespace MiniBus
             _disposed = true;
         }
 
-        readonly IEnumerable<IMessageQueue> _writeQueues;
+        readonly WriteQueueManager _writeQueueManager;
         readonly IMessageQueue _readQueue;
         readonly IMessageQueue _errorQueue;
         readonly IBusConfig _config;

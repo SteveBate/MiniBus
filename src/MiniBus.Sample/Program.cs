@@ -11,9 +11,10 @@ namespace MiniBus.Sample
         {
             Console.WriteLine("Choose an option to execute:");
             Console.WriteLine("1 - Send message to queue");
-            Console.WriteLine("2 - Read message from queue");
-            Console.WriteLine("3 - Read message from queue async");
-            Console.WriteLine("4 - Return error message to read queue");
+            Console.WriteLine("2 - Send message to queues in distributed manner");
+            Console.WriteLine("3 - Read message from queue");
+            Console.WriteLine("4 - Read message from queue async");
+            Console.WriteLine("5 - Return error message to read queue");
             Console.WriteLine("X - exit");
 
             var selection = Console.ReadKey();
@@ -25,14 +26,18 @@ namespace MiniBus.Sample
                     break;
 
                 case ConsoleKey.D2:
-                    ReceiveDemo();
+                    SendAutoDistributeDemo();
                     break;
 
                 case ConsoleKey.D3:
-                    ReceiveDemoAsync();
+                    ReceiveDemo();
                     break;
 
                 case ConsoleKey.D4:
+                    ReceiveDemoAsync();
+                    break;
+
+                case ConsoleKey.D5:
                     ReturnErrorMessagesDemo();
                     break;
 
@@ -49,13 +54,13 @@ namespace MiniBus.Sample
 
         static void SendDemo()
         {
-            // demonstrate sending
+            // demonstrate sending message to defined write queue
 
             IBus bus = new BusBuilder()
                 .WithLogging(new FileLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
-                .DefineWriteQueue("MiniBus.messages")
+                .DefineWriteQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
                 .EnlistInAmbientTransactions()
                 .JsonSerialization()
@@ -81,6 +86,34 @@ namespace MiniBus.Sample
             bus.Dispose();
         }
 
+        static void SendAutoDistributeDemo()
+        {
+            // demonstrate distributing messages evenly across queues
+            // each call to Send chooses the next queue to send the message to
+
+            IBus bus = new BusBuilder()
+                .WithLogging(new FileLogger())
+                .InstallMsmqIfNeeded()
+                .DefineErrorQueue("MiniBus.errors")
+                .DefineWriteQueue("MiniBus.messages1")
+                .DefineWriteQueue("MiniBus.messages2")
+                .DefineWriteQueue("MiniBus.messages3")
+                .CreateLocalQueuesAutomatically()
+                .AutoDistributeOnSend()
+                .JsonSerialization()
+                .CreateBus();
+
+            var p = new Person { Name = "Bob", Age = 20 };
+            bus.Send(p); // MiniBus.messages1
+            bus.Send(p); // MiniBus.messages2
+            bus.Send(p); // MiniBus.messages3
+            bus.Send(p); // MiniBus.messages1
+            
+            Console.WriteLine("\nPress a key to exit");
+            Console.ReadLine();
+            bus.Dispose();
+        }
+
         static void ReceiveDemo()
         {
             // demonstrate receiving - Receive processes whatever messages happen to be on the queue at the time of the call
@@ -92,7 +125,7 @@ namespace MiniBus.Sample
                 .WithLogging(new FileLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
-                .DefineReadQueue("MiniBus.messages")
+                .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
                 .EnlistInAmbientTransactions()
                 .JsonSerialization()
@@ -118,7 +151,7 @@ namespace MiniBus.Sample
                 .WithLogging(new ConsoleLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
-                .DefineReadQueue("MiniBus.messages")
+                .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
                 .EnlistInAmbientTransactions()
                 .JsonSerialization()
@@ -140,7 +173,7 @@ namespace MiniBus.Sample
             IBus bus = new BusBuilder()
                 .WithLogging(new FileLogger())
                 .DefineErrorQueue("MiniBus.errors")
-                .DefineReadQueue("MiniBus.messages")
+                .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
                 .CreateBus();
 

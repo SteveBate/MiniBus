@@ -69,6 +69,7 @@
     <Compile Include="Infrastructure\Msmq.cs" />
     <Compile Include="Context\ReadMessageContext.cs" />
     <Compile Include="MessageQueues\MiniBusMessageQueue.cs" />
+    <Compile Include="MessageQueues\WriteQueueManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\SimpleJson.cs" />
   </ItemGroup>

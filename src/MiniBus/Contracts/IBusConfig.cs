@@ -11,6 +11,7 @@ namespace MiniBus.Contracts
         bool AutoCreateLocalQueues { get; set; }
         bool InstallMsmq { get; set; }
         bool EnlistInAmbientTransactions { get; set; }
-        bool JsonSerialization { get; set; }        
+        bool JsonSerialization { get; set; }
+        bool AutoDistributeOnSend { get; set; }
     }
 }

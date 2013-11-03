@@ -73,6 +73,12 @@ namespace MiniBus
             return this;
         }
 
+        public BusBuilder AutoDistributeOnSend()
+        {
+            _config.AutoDistributeOnSend = true;
+            return this;
+        }
+
         public IBus CreateBus()
         {
             if (string.IsNullOrEmpty(_config.ReadQueue) && _config.WriteQueues.Count == 0)

@@ -22,7 +22,7 @@ namespace MiniBus.Tests.BusTests
         }
 
         [Test]
-        public void Should_place_on_all_defined_write_queues()
+        public void Should_place_on_all_write_queues_by_default()
         {
             var msg = new FakeDto();
             var writeQueues = new[] { new FakeValidMessageQueue(), new FakeValidMessageQueue(), new FakeValidMessageQueue() };
@@ -30,6 +30,46 @@ namespace MiniBus.Tests.BusTests
 
             bus.Send(msg);
             
+            Assert.That(writeQueues[0].Count, Is.EqualTo(1));
+            Assert.That(writeQueues[1].Count, Is.EqualTo(1));
+            Assert.That(writeQueues[2].Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Should_place_only_on_first_write_queue_if_auto_distribute_configured()
+        {
+            var msg = new FakeDto();
+            var writeQueues = new[] { new FakeValidMessageQueue(), new FakeValidMessageQueue(), new FakeValidMessageQueue() };
+            var bus = new Bus(new FakeBusConfig { AutoDistributeOnSend = true }, new NullLogger(), new FakeValidMessageQueue(), new FakeValidMessageQueue(), writeQueues);
+
+            bus.Send(msg);
+
+            Assert.That(writeQueues[0].Count, Is.EqualTo(1));
+            Assert.That(writeQueues[1].Count, Is.EqualTo(0));
+            Assert.That(writeQueues[2].Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Should_place_on_next_write_queue_if_auto_distribute_configured()
+        {
+            var msg = new FakeDto();
+            var writeQueues = new[] { new FakeValidMessageQueue(), new FakeValidMessageQueue(), new FakeValidMessageQueue() };
+            var bus = new Bus(new FakeBusConfig { AutoDistributeOnSend = true }, new NullLogger(), new FakeValidMessageQueue(), new FakeValidMessageQueue(), writeQueues);
+
+            bus.Send(msg);
+
+            Assert.That(writeQueues[0].Count, Is.EqualTo(1));
+            Assert.That(writeQueues[1].Count, Is.EqualTo(0));
+            Assert.That(writeQueues[2].Count, Is.EqualTo(0));
+
+            bus.Send(msg);
+
+            Assert.That(writeQueues[0].Count, Is.EqualTo(1));
+            Assert.That(writeQueues[1].Count, Is.EqualTo(1));
+            Assert.That(writeQueues[2].Count, Is.EqualTo(0));
+
+            bus.Send(msg);
+
             Assert.That(writeQueues[0].Count, Is.EqualTo(1));
             Assert.That(writeQueues[1].Count, Is.EqualTo(1));
             Assert.That(writeQueues[2].Count, Is.EqualTo(1));

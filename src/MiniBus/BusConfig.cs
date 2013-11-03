@@ -17,6 +17,7 @@ namespace MiniBus
         public bool AutoCreateLocalQueues { get; set; }
         public bool InstallMsmq { get; set; }
         public bool EnlistInAmbientTransactions { get; set; }
-        public bool JsonSerialization { get; set; }        
+        public bool JsonSerialization { get; set; }
+        public bool AutoDistributeOnSend { get; set; }
     }
 }
