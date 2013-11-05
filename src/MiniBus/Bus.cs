@@ -51,7 +51,7 @@ namespace MiniBus
         /// </summary>
         public void Receive<T>()
         {
-            if (!_readQueue.IsInitialized) 
+            if (_readQueue == null || !_readQueue.IsInitialized) 
                 throw new BusException("Bus has not been configured for receiving messages. Did you forget to call DefineReadQueue on BusBuilder?");
 
             foreach (Message message in _readQueue.GetAllMessages())
@@ -76,7 +76,7 @@ namespace MiniBus
         /// <typeparam name="T"></typeparam>
         public void ReceiveAsync<T>()
         {
-            if (!_readQueue.IsInitialized)
+            if (_readQueue == null || !_readQueue.IsInitialized)
                 throw new BusException("Bus has not been configured for receiving messages. Did you forget to call DefineReadQueue on BusBuilder?");
 
             _readQueue.ReceiveAsync(message => {
@@ -99,7 +99,7 @@ namespace MiniBus
         /// </summary>
         public void ReturnErrorMessages()
         {
-            if (!_errorQueue.IsInitialized || !_readQueue.IsInitialized) 
+            if ((_errorQueue == null || !_errorQueue.IsInitialized) || (_readQueue == null || !_readQueue.IsInitialized))
                 throw new BusException("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
 
             foreach (Message message in _errorQueue.GetAllMessages())
