@@ -31,9 +31,8 @@ namespace MiniBus.MessageQueues
         public void ReceiveAsync(Action<Message> current)
         {
             if (_receiving) return;
-
-            _queue.PeekCompleted += (source, asyncResult) => 
-            {                     
+            
+            _handler = (source, asyncResult) => {                     
                 try
                 {
                     _receiving = true;
@@ -48,7 +47,13 @@ namespace MiniBus.MessageQueues
                 }
             };
 
+            _queue.PeekCompleted += _handler;
             _queue.BeginPeek();
+        }
+
+        public void StopReceiveAsync()
+        {
+            _queue.PeekCompleted -= _handler;
         }
 
         public IEnumerable<Message> GetAllMessages()
@@ -87,6 +92,7 @@ namespace MiniBus.MessageQueues
 
         readonly MessageQueue _queue;
         readonly ILogMessages _logger;
+        PeekCompletedEventHandler _handler;
         bool _receiving;
         bool _disposed;
     }

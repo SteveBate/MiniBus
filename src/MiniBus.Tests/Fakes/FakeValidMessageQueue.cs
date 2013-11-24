@@ -24,15 +24,23 @@ namespace MiniBus.Tests.Fakes
 
         public void ReceiveById(string messageId, MessageQueueTransactionType transactionType)
         {
+            var msg = _messages.Find(m => m.Id == messageId);
+            _messages.Remove(msg);
         }
 
         public void ReceiveAsync(Action<Message> current)
         {
         }
 
+        public void StopReceiveAsync()
+        {
+        }
+
         public IEnumerable<Message> GetAllMessages()
         {
-            return _messages;
+            var newList = new List<Message>();
+            _messages.ForEach(m => newList.Add(m));
+            return newList;
         }
 
         public bool IsInitialized

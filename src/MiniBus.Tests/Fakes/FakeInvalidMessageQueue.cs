@@ -24,6 +24,10 @@ namespace MiniBus.Tests.Fakes
         {
         }
 
+        public void StopReceiveAsync()
+        {
+        }
+
         public IEnumerable<Message> GetAllMessages()
         {
             return null;

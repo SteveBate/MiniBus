@@ -19,5 +19,6 @@ namespace MiniBus
         public bool EnlistInAmbientTransactions { get; set; }
         public bool JsonSerialization { get; set; }
         public bool AutoDistributeOnSend { get; set; }
+        public bool FailFast { get; set; }
     }
 }

@@ -214,17 +214,35 @@ namespace MiniBus.Tests.BusTests
         }
 
         [Test]
-        public void Should_move_message_to_error_queue_on_error()
+        public void Should_move_failed_messages_to_error_queue_when_fail_fast_not_configured()
         {
             var logger = new FakeLogger();
             var handler = new FakeExceptionThrowingUserHandler();
             var errorQueue = new FakeValidMessageQueue();
-            var bus = new Bus(new FakeBusConfig(), logger, errorQueue, QueueWithOneMessage(), new[] { new FakeValidMessageQueue() });
+            var readQueue = QueueWithTwoMessages();
+            var bus = new Bus(new FakeBusConfig { FailFast = false }, logger, errorQueue, readQueue, new[] { new FakeValidMessageQueue() });
             bus.RegisterHandler(handler);
 
             bus.Receive<FakeDto>();
 
-            Assert.That(errorQueue.Count, Is.EqualTo(1));
+            Assert.That(errorQueue.Count, Is.EqualTo(2));
+            Assert.That(readQueue.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Should_leave_failed_message_on_read_queue_when_fail_fast_configured()
+        {
+            var logger = new FakeLogger();
+            var handler = new FakeExceptionThrowingUserHandler();
+            var errorQueue = new FakeValidMessageQueue();
+            var readQueue = QueueWithTwoMessages();
+            var bus = new Bus(new FakeBusConfig { FailFast = true }, logger, errorQueue, readQueue, new[] { new FakeValidMessageQueue() });
+            bus.RegisterHandler(handler);
+
+            bus.Receive<FakeDto>();
+
+            Assert.That(errorQueue.Count, Is.EqualTo(0));
+            Assert.That(readQueue.Count, Is.EqualTo(2));
         }
 
         [Test]

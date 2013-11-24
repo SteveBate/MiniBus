@@ -12,5 +12,6 @@ namespace MiniBus.Contracts
         void Send(Message message, string label, MessageQueueTransactionType transactionType);
         void ReceiveById(string messageId, MessageQueueTransactionType transactionType);
         void ReceiveAsync(Action<Message> current);
+        void StopReceiveAsync();
     }
 }

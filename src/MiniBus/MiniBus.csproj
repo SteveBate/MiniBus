@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Aspects\FailFastAspect.cs" />
     <Compile Include="Aspects\LoggingAspect.cs" />
     <Compile Include="Aspects\MoveToErrorQueueAspect.cs" />
     <Compile Include="Aspects\RemoveFromReadQueueAspect.cs" />

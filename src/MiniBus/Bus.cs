@@ -59,11 +59,15 @@ namespace MiniBus
                 var context = new ReadMessageContext(_errorQueue, _readQueue);
                 var receiveMessageHandler = new ReceiveMessageHandler<T>(_handlers, _config, _logger);
                 var retryAspect = new RetryAspect(receiveMessageHandler, _config, _logger);
-                var removeFromReadQueueAspect = new RemoveFromReadQueueAspect(retryAspect, context, _logger);
-                var moveToErrorQueueAspect = new MoveToErrorQueueAspect(removeFromReadQueueAspect, context, _logger);
+                var removeFromReadQueueAspect = new RemoveFromReadQueueAspect(retryAspect, context, _config, _logger);
+                var moveToErrorQueueAspect = new MoveToErrorQueueAspect(removeFromReadQueueAspect, context, _config, _logger);
                 var loggingAspect = new LoggingAspect(moveToErrorQueueAspect, ReceiveOperation, _logger);
                 var transactionAspect = new TransactionAspect(loggingAspect, _logger);
-                transactionAspect.Handle(message);
+                var failFastAspect = new FailFastAspect(transactionAspect, _config, _logger);
+                failFastAspect.Handle(message);
+
+                if (failFastAspect.Failed)
+                    break;
             }            
         }
 
@@ -84,12 +88,15 @@ namespace MiniBus
                 var context = new ReadMessageContext(_errorQueue, _readQueue);
                 var receiveMessageHandler = new ReceiveMessageHandler<T>(_handlers, _config, _logger);
                 var retryAspect = new RetryAspect(receiveMessageHandler, _config, _logger);
-                var removeFromReadQueueAspect = new RemoveFromReadQueueAspect(retryAspect, context, _logger);
-                var moveToErrorQueueAspect = new MoveToErrorQueueAspect(removeFromReadQueueAspect, context, _logger);
+                var removeFromReadQueueAspect = new RemoveFromReadQueueAspect(retryAspect, context,_config, _logger);
+                var moveToErrorQueueAspect = new MoveToErrorQueueAspect(removeFromReadQueueAspect, context, _config, _logger);
                 var loggingAspect = new LoggingAspect(moveToErrorQueueAspect, ReceiveOperation, _logger);
                 var transactionAspect = new TransactionAspect(loggingAspect, _logger);
-                transactionAspect.Handle(message);            
-            
+                var failFastAspect = new FailFastAspect(transactionAspect, _config, _logger);
+                failFastAspect.Handle(message);
+
+                if (failFastAspect.Failed)
+                    _readQueue.StopReceiveAsync();
             });
         }
 

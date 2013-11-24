@@ -17,6 +17,7 @@ MiniBus offers the following features:
 * Install MSMQ if not detected
 * Simple logging support
 * Return error messages back to the read queue
+* Fail Fast
 
 ## How to use
 
@@ -170,6 +171,10 @@ MiniBus by default will move a failed message to the error queue as soon as an e
 ##### * AutoDistributeOnSend
 
 By default, when sending messages MiniBus will send the same message to all the writeQueues you have defined. Sometimes though you may want to evenly distribute messages bewteen all the queues in order to achieve load balancing with the receivers. Setting this option will cause MiniBus to send a message to a different queue on each successive call to Send.
+
+##### * FailFast
+
+Ordinarily when an error occurs processing a message it is moved to the designated error queue for later intervention. In most cases this is fine but sometimes it can be critical that message order is preserved. In other words, we don't want any subsequent messages to be processed until the failed message is fixed. The FailFast option causes the queue to immediately stop processing messages in the event of an error. The failing message itself stays on the read queue rather than being moved to the error queue so that when the issue is fixed it will be the first message to be processed.
 
 ## Building the Source
 

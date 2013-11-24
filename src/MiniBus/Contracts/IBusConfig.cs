@@ -13,5 +13,6 @@ namespace MiniBus.Contracts
         bool EnlistInAmbientTransactions { get; set; }
         bool JsonSerialization { get; set; }
         bool AutoDistributeOnSend { get; set; }
+        bool FailFast { get; set; }
     }
 }

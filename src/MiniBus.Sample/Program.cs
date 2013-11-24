@@ -14,7 +14,11 @@ namespace MiniBus.Sample
             Console.WriteLine("2 - Send message to queues in distributed manner");
             Console.WriteLine("3 - Read message from queue");
             Console.WriteLine("4 - Read message from queue async");
-            Console.WriteLine("5 - Return error message to read queue");
+            Console.WriteLine("5 - Fail to error queue");
+            Console.WriteLine("6 - Fail to error queue async");
+            Console.WriteLine("7 - Fail fast");
+            Console.WriteLine("8 - Fail fast async");
+            Console.WriteLine("7 - Return error message to read queue");
             Console.WriteLine("X - exit");
 
             var selection = Console.ReadKey();
@@ -38,6 +42,22 @@ namespace MiniBus.Sample
                     break;
 
                 case ConsoleKey.D5:
+                    FailToErrorQueueDemo();
+                    break;
+
+                case ConsoleKey.D6:
+                    FailToErrorQueueAsync();
+                    break;
+
+                case ConsoleKey.D7:
+                    FailFastDemo();
+                    break;
+
+                case ConsoleKey.D8:
+                    FailFastDemoAsync();
+                    break;
+
+                case ConsoleKey.D9:
                     ReturnErrorMessagesDemo();
                     break;
 
@@ -144,7 +164,7 @@ namespace MiniBus.Sample
 
         static void ReceiveDemoAsync()
         {
-            // demonstrate receiving asynchrnously - ReceiveAsync processes messages as and when they arrive. 
+            // demonstrate receiving asynchronously - ReceiveAsync processes messages as and when they arrive. 
             // Open another instance to send messages while the other receives.
 
             IBus bus = new BusBuilder()
@@ -158,7 +178,116 @@ namespace MiniBus.Sample
                 .NumberOfRetries(3)
                 .CreateBus();
 
+            // pass true to have a message fail and moved to the error queue
             bus.RegisterHandler(new PersonHandler(false));
+            bus.ReceiveAsync<Person>();
+
+            Console.WriteLine("\nPress a key to exit");
+            Console.ReadLine();
+            bus.Dispose();
+        }
+
+        static void FailToErrorQueueDemo()
+        {
+            // demonstrate receiving - Receive processes whatever messages happen to be on the queue at the time of the call
+
+            Console.WriteLine("\nPress a key to read message/s");
+            Console.ReadLine();
+
+            IBus bus = new BusBuilder()
+                .WithLogging(new FileLogger())
+                .InstallMsmqIfNeeded()
+                .DefineErrorQueue("MiniBus.errors")
+                .DefineReadQueue("MiniBus.messages1")
+                .CreateLocalQueuesAutomatically()
+                .EnlistInAmbientTransactions()
+                .JsonSerialization()
+                .NumberOfRetries(3)
+                .CreateBus();
+
+            // pass true to have a message fail and moved to the error queue
+            bus.RegisterHandler(new PersonHandler(true));
+
+            bus.Receive<Person>();
+
+            Console.WriteLine("\nPress a key to exit");
+            Console.ReadLine();
+            bus.Dispose();
+        }
+
+        static void FailToErrorQueueAsync()
+        {
+            // demonstrate receiving asynchronously - ReceiveAsync processes messages as and when they arrive. 
+            // Open another instance to send messages while the other receives.
+
+            IBus bus = new BusBuilder()
+                .WithLogging(new ConsoleLogger())
+                .InstallMsmqIfNeeded()
+                .DefineErrorQueue("MiniBus.errors")
+                .DefineReadQueue("MiniBus.messages1")
+                .CreateLocalQueuesAutomatically()
+                .EnlistInAmbientTransactions()
+                .JsonSerialization()
+                .NumberOfRetries(3)
+                .CreateBus();
+
+            // pass true to have a message fail and moved to the error queue
+            bus.RegisterHandler(new PersonHandler(true));
+            bus.ReceiveAsync<Person>();
+
+            Console.WriteLine("\nPress a key to exit");
+            Console.ReadLine();
+            bus.Dispose();
+        }
+
+        static void FailFastDemo()
+        {
+            // demonstrate receiving - Receive processes whatever messages happen to be on the queue at the time of the call
+
+            Console.WriteLine("\nPress a key to read message/s");
+            Console.ReadLine();
+
+            IBus bus = new BusBuilder()
+                .WithLogging(new FileLogger())
+                .InstallMsmqIfNeeded()
+                .DefineErrorQueue("MiniBus.errors")
+                .DefineReadQueue("MiniBus.messages1")
+                .CreateLocalQueuesAutomatically()
+                .EnlistInAmbientTransactions()
+                .JsonSerialization()
+                .NumberOfRetries(3)
+                .FailFast()
+                .CreateBus();
+
+            // pass true to have a message fail fast by stopping all message processing. Messages are left on the read queue
+            bus.RegisterHandler(new PersonHandler(true));
+
+            bus.Receive<Person>();
+
+            Console.WriteLine("\nPress a key to exit");
+            Console.ReadLine();
+            bus.Dispose();
+        }
+
+        static void FailFastDemoAsync()
+        {
+            // demonstrate receiving asynchrnously - ReceiveAsync processes messages as and when they arrive. 
+            // Open another instance to send messages while the other receives.
+
+            IBus bus = new BusBuilder()
+                .WithLogging(new ConsoleLogger())
+                .InstallMsmqIfNeeded()
+                .DefineErrorQueue("MiniBus.errors")
+                .DefineReadQueue("MiniBus.messages1")
+                .CreateLocalQueuesAutomatically()
+                .EnlistInAmbientTransactions()
+                .JsonSerialization()
+                .NumberOfRetries(3)
+                .FailFast()
+                .CreateBus();
+
+            // pass true to have a message fail fast by stopping all message processing. Messages are left on the read queue
+            bus.RegisterHandler(new PersonHandler(true));
             bus.ReceiveAsync<Person>();
 
             Console.WriteLine("\nPress a key to exit");

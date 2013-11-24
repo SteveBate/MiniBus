@@ -23,9 +23,17 @@ namespace MiniBus.Tests
 
         protected List<Delegate> ThreeHandlers;
 
-        internal IMessageQueue QueueWithOneMessage()
+        internal FakeValidMessageQueue QueueWithOneMessage()
         {
             var queue = new FakeValidMessageQueue();
+            queue.Add(new Message { Body = new FakeDto() });
+            return queue;
+        }
+
+        internal FakeValidMessageQueue QueueWithTwoMessages()
+        {
+            var queue = new FakeValidMessageQueue();
+            queue.Add(new Message { Body = new FakeDto() });
             queue.Add(new Message { Body = new FakeDto() });
             return queue;
         }

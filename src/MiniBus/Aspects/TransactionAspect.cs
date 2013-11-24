@@ -28,6 +28,7 @@ namespace MiniBus.Aspects
                 catch (Exception)
                 {
                     _logger.Log(string.Format("Message: {0} - Transaction rolled back", msg.Label));
+                    throw;
                 }
             }
         }
