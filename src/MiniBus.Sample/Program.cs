@@ -10,16 +10,16 @@ namespace MiniBus.Sample
         static void Main(string[] args)
         {
             Console.WriteLine("Choose an option to execute:");
-            Console.WriteLine("1 - Send message to queue");
-            Console.WriteLine("2 - Send message to queues in distributed manner");
-            Console.WriteLine("3 - Read message from queue");
-            Console.WriteLine("4 - Read message from queue async");
-            Console.WriteLine("5 - Fail to error queue");
-            Console.WriteLine("6 - Fail to error queue async");
-            Console.WriteLine("7 - Fail fast");
-            Console.WriteLine("8 - Fail fast async");
-            Console.WriteLine("7 - Return error message to read queue");
-            Console.WriteLine("X - exit");
+            Console.WriteLine("1  - Send message to queue");
+            Console.WriteLine("2  - Send message to queues in distributed manner");
+            Console.WriteLine("3  - Read message from queue");
+            Console.WriteLine("4  - Read message from queue async");
+            Console.WriteLine("5  - Fail to error queue");
+            Console.WriteLine("6  - Fail to error queue async");
+            Console.WriteLine("7  - Fail fast");
+            Console.WriteLine("8  - Fail fast async");
+            Console.WriteLine("9  - Return error messages to read queue");
+            Console.WriteLine("X  - exit");
 
             var selection = Console.ReadKey();
 
@@ -60,7 +60,7 @@ namespace MiniBus.Sample
                 case ConsoleKey.D9:
                     ReturnErrorMessagesDemo();
                     break;
-
+                    
                 case ConsoleKey.X:                    
                     break;
 
@@ -306,7 +306,20 @@ namespace MiniBus.Sample
                 .CreateLocalQueuesAutomatically()
                 .CreateBus();
 
-            bus.ReturnErrorMessages();
+            Console.WriteLine("Enter the id of the message to be returned or type 'all' for all messages");
+            string messageid = Console.ReadLine();
+
+            try
+            {
+                if (messageid == "all")
+                    bus.ReturnAllErrorMessages();
+                else
+                    bus.ReturnErrorMessage(messageid);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Couldn't return error messages to the read queue: {0}", ex.Message);
+            }
 
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();

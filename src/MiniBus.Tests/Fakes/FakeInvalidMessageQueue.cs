@@ -33,6 +33,11 @@ namespace MiniBus.Tests.Fakes
             return null;
         }
 
+        public Message GetMessageBy(string id)
+        {
+            return null;
+        }
+
         public bool IsInitialized
         {
             get { return false; }

@@ -101,21 +101,50 @@ namespace MiniBus
         }
 
         /// <summary>
-        /// Read messages containg the given type T off the defined 
+        /// Read messages containing the given type T off the defined 
         /// error queue and moves them to the user defined read queue
         /// </summary>
-        public void ReturnErrorMessages()
+        public void ReturnAllErrorMessages()
         {
             if ((_errorQueue == null || !_errorQueue.IsInitialized) || (_readQueue == null || !_readQueue.IsInitialized))
                 throw new BusException("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
 
-            foreach (Message message in _errorQueue.GetAllMessages())
+            try
             {
+                foreach (Message message in _errorQueue.GetAllMessages())
+                {
+                    var context = new ReadMessageContext(_errorQueue, _readQueue);
+                    var returnToSourceHandler = new ReturnToSourceHandler(context, _logger);
+                    var loggingAspect = new LoggingAspect(returnToSourceHandler, ReturnOperation, _logger);
+                    loggingAspect.Handle(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BusException(String.Format("A problem occurred retreiving messages from the error queue: ", ex));
+            }        
+        }
+
+        /// <summary>
+        /// Read specific message off the defined error queue and move it to the user defined read queue
+        /// </summary>
+        public void ReturnErrorMessage(string id)
+        {
+            if ((_errorQueue == null || !_errorQueue.IsInitialized) || (_readQueue == null || !_readQueue.IsInitialized))
+                throw new BusException("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
+
+            try
+            {
+                Message message = _errorQueue.GetMessageBy(id);
                 var context = new ReadMessageContext(_errorQueue, _readQueue);
                 var returnToSourceHandler = new ReturnToSourceHandler(context, _logger);
                 var loggingAspect = new LoggingAspect(returnToSourceHandler, ReturnOperation, _logger);
                 loggingAspect.Handle(message);
-            }            
+            }
+            catch (Exception)
+            {
+                throw new BusException(String.Format("Message with id {0} was not found on the error queue", id));
+            }          
         }
 
         /// <summary>

@@ -56,9 +56,23 @@ namespace MiniBus.MessageQueues
             _queue.PeekCompleted -= _handler;
         }
 
+        /// <summary>
+        /// throws System.Messaging.MessageQueueException
+        /// </summary>
+        /// <returns>An array of Msmq messages</returns>
         public IEnumerable<Message> GetAllMessages()
         {
             return _queue.GetAllMessages();
+        }
+
+        /// <summary>
+        /// throws System.Messaging.MessageQueueException
+        /// </summary>
+        /// <param name="id">the identifier of the message to be moved</param>
+        /// <returns>An Msmq message represented by the given id</returns>
+        public Message GetMessageBy(string id)
+        {
+            return _queue.PeekById(id);
         }
 
         public bool IsInitialized

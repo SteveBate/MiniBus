@@ -8,6 +8,7 @@ namespace MiniBus.Contracts
         void Send<T>(T message);
         void Receive<T>();
         void ReceiveAsync<T>();
-        void ReturnErrorMessages();
+        void ReturnAllErrorMessages();
+        void ReturnErrorMessage(string id);
     }
 }

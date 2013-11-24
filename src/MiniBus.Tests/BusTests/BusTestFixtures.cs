@@ -109,14 +109,41 @@ namespace MiniBus.Tests.BusTests
     public class When_returning_error_messages : Setup
     {
         [Test]
-        public void Should_move_message_to_read_queue()
+        public void Should_move_all_to_read_queue()
         {
+            var errorQueue = QueueWithTwoMessages();
             var readQueue = new FakeValidMessageQueue();
-            var bus = new Bus(new FakeBusConfig(), new NullLogger(), QueueWithOneMessage(), readQueue, new[] { new FakeValidMessageQueue() });
+            var bus = new Bus(new FakeBusConfig(), new NullLogger(), errorQueue, readQueue, new[] { new FakeValidMessageQueue() });
 
-            bus.ReturnErrorMessages();
+            bus.ReturnAllErrorMessages();
 
+            Assert.That(errorQueue.Count, Is.EqualTo(0));
+            Assert.That(readQueue.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Should_move_specific_message_to_read_queue()
+        {
+            var errorQueue = QueueWithTwoMessages();
+            var readQueue = new FakeValidMessageQueue();
+            var bus = new Bus(new FakeBusConfig(), new NullLogger(), errorQueue, readQueue, new[] { new FakeValidMessageQueue() });
+
+            bus.ReturnErrorMessage("00000-00000-00000-00000\0000");
+
+            Assert.That(errorQueue.Count, Is.EqualTo(1));
             Assert.That(readQueue.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Should_throw_when_specific_message_is_not_found()
+        {
+            var errorQueue = QueueWithTwoMessages();
+            var readQueue = new FakeValidMessageQueue();
+            var bus = new Bus(new FakeBusConfig(), new NullLogger(), errorQueue, readQueue, new[] { new FakeValidMessageQueue() });
+
+            var exception = Assert.Throws<BusException>(() => bus.ReturnErrorMessage("0"));
+
+            Assert.That(exception.Message, Is.EqualTo("Message with id 0 was not found on the error queue"));
         }
 
         [Test]
@@ -124,7 +151,7 @@ namespace MiniBus.Tests.BusTests
         {
             var bus = new Bus(new BusConfig(), new NullLogger(), new FakeValidMessageQueue(), new FakeInvalidMessageQueue(), new[] { new FakeValidMessageQueue() });
 
-            var exception = Assert.Throws<BusException>(bus.ReturnErrorMessages);
+            var exception = Assert.Throws<BusException>(bus.ReturnAllErrorMessages);
 
             Assert.That(exception.Message, Is.EqualTo("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?"));
         }
@@ -136,7 +163,7 @@ namespace MiniBus.Tests.BusTests
             var readQueue = new FakeValidMessageQueue();
             var bus = new Bus(new FakeBusConfig(), logger, QueueWithOneMessage(), readQueue, new[] { new FakeValidMessageQueue() });
 
-            bus.ReturnErrorMessages();
+            bus.ReturnAllErrorMessages();
 
             Assert.That(logger[0], Is.StringEnding("Started RETURN_TO_SOURCE Operation"));
             Assert.That(logger[1], Is.StringEnding("Removing from queue: FakeValidMessageQueue"));
@@ -149,7 +176,7 @@ namespace MiniBus.Tests.BusTests
         {
             var bus = new Bus(new BusConfig(), new NullLogger(), new FakeInvalidMessageQueue(), new FakeValidMessageQueue(), new[] { new FakeValidMessageQueue() });
 
-            var exception = Assert.Throws<BusException>(bus.ReturnErrorMessages);
+            var exception = Assert.Throws<BusException>(bus.ReturnAllErrorMessages);
 
             Assert.That(exception.Message, Is.EqualTo("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?"));
         }

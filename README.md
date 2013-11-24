@@ -17,7 +17,7 @@ MiniBus offers the following features:
 * Install MSMQ if not detected
 * Simple logging support
 * Return error messages back to the read queue
-* Fail Fast
+* Fail fast option
 
 ## How to use
 
@@ -142,7 +142,7 @@ If you're running your application with MiniBus for the first time on a clean ma
 
 ##### * DefineErrorQueue
 
-When a message cannot be processed, you don't want to lose it. By defining an error queue MiniBus has somewhere to place the failed message until you're ready to try again. In order to do so, you can create the bus and call <strong>ReturnErrorMessages</strong> to have the messages moved back to the read queue.
+When a message cannot be processed, you don't want to lose it. By defining an error queue MiniBus has somewhere to place the failed message until you're ready to try again. In order to do so, you can create the bus and call <strong>ReturnAllErrorMessages</strong> to have the messages moved back to the read queue.
 
 ##### * DefineReadQueue
 

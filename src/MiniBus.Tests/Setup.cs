@@ -26,15 +26,15 @@ namespace MiniBus.Tests
         internal FakeValidMessageQueue QueueWithOneMessage()
         {
             var queue = new FakeValidMessageQueue();
-            queue.Add(new Message { Body = new FakeDto() });
+            queue.Add(new Message { Body = new FakeDto(), Label = "00000-00000-00000-00000\0000" });
             return queue;
         }
 
         internal FakeValidMessageQueue QueueWithTwoMessages()
         {
             var queue = new FakeValidMessageQueue();
-            queue.Add(new Message { Body = new FakeDto() });
-            queue.Add(new Message { Body = new FakeDto() });
+            queue.Add(new Message { Body = new FakeDto(), Label = "00000-00000-00000-00000\0000" });
+            queue.Add(new Message { Body = new FakeDto(), Label = "00000-00000-00000-00000\0001" });
             return queue;
         }
     }

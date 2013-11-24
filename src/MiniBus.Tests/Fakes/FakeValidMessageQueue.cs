@@ -1,5 +1,6 @@
 ﻿using MiniBus.Contracts;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Messaging;
 
@@ -41,6 +42,11 @@ namespace MiniBus.Tests.Fakes
             var newList = new List<Message>();
             _messages.ForEach(m => newList.Add(m));
             return newList;
+        }
+
+        public Message GetMessageBy(string id)
+        {
+            return _messages.SingleOrDefault(m => m.Label == id);
         }
 
         public bool IsInitialized
