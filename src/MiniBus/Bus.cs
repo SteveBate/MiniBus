@@ -21,7 +21,17 @@ namespace MiniBus
             _errorQueue = errorQueue;
             _readQueue = readQueue;
             _writeQueueManager = new WriteQueueManager(_config.AutoDistributeOnSend, writeQueues);
-        }      
+        }
+
+        /// <summary>
+        /// Takes user-defined message handlers implementing the IHandleMessage 
+        /// of T interface and stores them to be invoked later when the Receive
+        /// method is called.
+        /// </summary>
+        public void RegisterHandler<T>(IHandleMessage<T> handler)
+        {
+            _handlers.Add(new Action<T>(handler.Handle));
+        }
 
         /// <summary>
         /// Takes a given type T and serializes it to json before
@@ -148,13 +158,11 @@ namespace MiniBus
         }
 
         /// <summary>
-        /// Takes user-defined message handlers implementing the IHandleMessage 
-        /// of T interface and stores them to be invoked later when the Receive
-        /// method is called.
+        /// Stops listening for messages - only applicable to a bus started with ReceiveAsync
         /// </summary>
-        public void RegisterHandler<T>(IHandleMessage<T> handler)
+        public void StopReceiving()
         {
-            _handlers.Add(new Action<T>(handler.Handle));
+            _readQueue.StopReceiveAsync();
         }
 
         Message CreateMsmqMessageFromDto<T>(T dto)

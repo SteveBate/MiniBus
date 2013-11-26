@@ -7,6 +7,9 @@ namespace MiniBus.Sample
 {
     class Program
     {
+        static bool stopped = true;
+        static IBus _bus;
+
         static void Main(string[] args)
         {
             Console.WriteLine("Choose an option to execute:");
@@ -76,7 +79,7 @@ namespace MiniBus.Sample
         {
             // demonstrate sending message to defined write queue
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
@@ -96,14 +99,14 @@ namespace MiniBus.Sample
 
                     // insert/update a database to see atomic commit
 
-                    bus.Send(p);
+                    _bus.Send(p);
                 }
                 scope.Complete();
             }
             
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();
-            bus.Dispose();
+            _bus.Dispose();
         }
 
         static void SendAutoDistributeDemo()
@@ -111,7 +114,7 @@ namespace MiniBus.Sample
             // demonstrate distributing messages evenly across queues
             // each call to Send chooses the next queue to send the message to
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
@@ -124,14 +127,14 @@ namespace MiniBus.Sample
                 .CreateBus();
 
             var p = new Person { Name = "Bob", Age = 20 };
-            bus.Send(p); // MiniBus.messages1
-            bus.Send(p); // MiniBus.messages2
-            bus.Send(p); // MiniBus.messages3
-            bus.Send(p); // MiniBus.messages1
+            _bus.Send(p); // MiniBus.messages1
+            _bus.Send(p); // MiniBus.messages2
+            _bus.Send(p); // MiniBus.messages3
+            _bus.Send(p); // MiniBus.messages1
             
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();
-            bus.Dispose();
+            _bus.Dispose();
         }
 
         static void ReceiveDemo()
@@ -141,7 +144,7 @@ namespace MiniBus.Sample
             Console.WriteLine("\nPress a key to read message/s");
             Console.ReadLine();
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
@@ -153,13 +156,13 @@ namespace MiniBus.Sample
                 .CreateBus();
 
             // pass true to have a message fail and moved to the error queue
-            bus.RegisterHandler(new PersonHandler(false));
+            _bus.RegisterHandler(new PersonHandler(false));
             
-            bus.Receive<Person>();
+            _bus.Receive<Person>();
 
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine(); 
-            bus.Dispose();
+            _bus.Dispose();
         }
 
         static void ReceiveDemoAsync()
@@ -167,7 +170,7 @@ namespace MiniBus.Sample
             // demonstrate receiving asynchronously - ReceiveAsync processes messages as and when they arrive. 
             // Open another instance to send messages while the other receives.
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new ConsoleLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
@@ -179,12 +182,20 @@ namespace MiniBus.Sample
                 .CreateBus();
 
             // pass true to have a message fail and moved to the error queue
-            bus.RegisterHandler(new PersonHandler(false));
-            bus.ReceiveAsync<Person>();
+            _bus.RegisterHandler(new PersonHandler(false));
 
-            Console.WriteLine("\nPress a key to exit");
-            Console.ReadLine();
-            bus.Dispose();
+            Console.WriteLine("\nPress S to start/stop listening to messages or any other key to exit");
+            while(Console.ReadKey().Key == ConsoleKey.S)
+            {
+                if (stopped)                    
+                    _bus.ReceiveAsync<Person>();
+                else
+                    _bus.StopReceiving();
+
+                stopped = !stopped;
+            }
+
+            _bus.Dispose();
         }
 
         static void FailToErrorQueueDemo()
@@ -194,7 +205,7 @@ namespace MiniBus.Sample
             Console.WriteLine("\nPress a key to read message/s");
             Console.ReadLine();
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
@@ -206,13 +217,13 @@ namespace MiniBus.Sample
                 .CreateBus();
 
             // pass true to have a message fail and moved to the error queue
-            bus.RegisterHandler(new PersonHandler(true));
+            _bus.RegisterHandler(new PersonHandler(true));
 
-            bus.Receive<Person>();
+            _bus.Receive<Person>();
 
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();
-            bus.Dispose();
+            _bus.Dispose();
         }
 
         static void FailToErrorQueueAsync()
@@ -220,7 +231,7 @@ namespace MiniBus.Sample
             // demonstrate receiving asynchronously - ReceiveAsync processes messages as and when they arrive. 
             // Open another instance to send messages while the other receives.
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new ConsoleLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
@@ -232,12 +243,12 @@ namespace MiniBus.Sample
                 .CreateBus();
 
             // pass true to have a message fail and moved to the error queue
-            bus.RegisterHandler(new PersonHandler(true));
-            bus.ReceiveAsync<Person>();
+            _bus.RegisterHandler(new PersonHandler(true));
+            _bus.ReceiveAsync<Person>();
 
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();
-            bus.Dispose();
+            _bus.Dispose();
         }
 
         static void FailFastDemo()
@@ -247,7 +258,7 @@ namespace MiniBus.Sample
             Console.WriteLine("\nPress a key to read message/s");
             Console.ReadLine();
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
@@ -260,13 +271,13 @@ namespace MiniBus.Sample
                 .CreateBus();
 
             // pass true to have a message fail fast by stopping all message processing. Messages are left on the read queue
-            bus.RegisterHandler(new PersonHandler(true));
+            _bus.RegisterHandler(new PersonHandler(true));
 
-            bus.Receive<Person>();
+            _bus.Receive<Person>();
 
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();
-            bus.Dispose();
+            _bus.Dispose();
         }
 
         static void FailFastDemoAsync()
@@ -274,7 +285,7 @@ namespace MiniBus.Sample
             // demonstrate receiving asynchrnously - ReceiveAsync processes messages as and when they arrive. 
             // Open another instance to send messages while the other receives.
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new ConsoleLogger())
                 .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
@@ -287,19 +298,19 @@ namespace MiniBus.Sample
                 .CreateBus();
 
             // pass true to have a message fail fast by stopping all message processing. Messages are left on the read queue
-            bus.RegisterHandler(new PersonHandler(true));
-            bus.ReceiveAsync<Person>();
+            _bus.RegisterHandler(new PersonHandler(true));
+            _bus.ReceiveAsync<Person>();
 
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();
-            bus.Dispose();
+            _bus.Dispose();
         }
 
         static void ReturnErrorMessagesDemo()
         {
             // demonstrate moving messages from error queue to read queue
 
-            IBus bus = new BusBuilder()
+            _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.messages1")
@@ -312,9 +323,9 @@ namespace MiniBus.Sample
             try
             {
                 if (messageid == "all")
-                    bus.ReturnAllErrorMessages();
+                    _bus.ReturnAllErrorMessages();
                 else
-                    bus.ReturnErrorMessage(messageid);
+                    _bus.ReturnErrorMessage(messageid);
             }
             catch (Exception ex)
             {
@@ -323,7 +334,7 @@ namespace MiniBus.Sample
 
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();
-            bus.Dispose();
+            _bus.Dispose();
         }
     }
 

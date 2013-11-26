@@ -54,6 +54,7 @@ namespace MiniBus.MessageQueues
         public void StopReceiveAsync()
         {
             _queue.PeekCompleted -= _handler;
+            _receiving = false;
         }
 
         /// <summary>
