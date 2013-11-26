@@ -131,7 +131,7 @@ namespace MiniBus
             }
             catch (Exception ex)
             {
-                throw new BusException(String.Format("A problem occurred retreiving messages from the error queue: ", ex));
+                throw new BusException(String.Format("A problem occurred retreiving messages from the error queue: {0}", ex));
             }        
         }
 
