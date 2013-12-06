@@ -32,6 +32,16 @@ namespace MiniBus
             return this;
         }
 
+        public BusBuilder DefineWriteQueues(params string[] names)
+        {
+            foreach (var name in names)
+            {
+                _config.WriteQueues.Add(name);
+            }
+
+            return this;
+        }
+
         public BusBuilder DefineErrorQueue(string name)
         {
             _config.ErrorQueue = name;
