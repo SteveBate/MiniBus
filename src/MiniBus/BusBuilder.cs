@@ -9,6 +9,7 @@ using MiniBus.Infrastructure;
 using System.Threading;
 using MiniBus.MessageQueues;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace MiniBus
 {
@@ -196,7 +197,9 @@ namespace MiniBus
                 return string.Format(@".\private$\{0}", queueName);
 
             // remote
-            return string.Format(@"FormatName:DIRECT=OS:{0}\private$\{1}", machineName, queueName);
+            bool isIpAddress = Regex.Match(machineName, ipaddress).Success;
+            string transport = isIpAddress ? "TCP" : "OS";
+            return string.Format(@"FormatName:DIRECT={0}:{1}\private$\{2}", transport, machineName, queueName);
         }
 
         void CreateLocalEndpointOnDisk(string machineName, string path)
@@ -242,6 +245,11 @@ namespace MiniBus
 
         static bool QueueExists(string machineName, string queueName, string path)
         {
+            bool isIpAddress = Regex.Match(machineName, ipaddress).Success;
+
+            if (isIpAddress)
+                return true; // assume valid as no means of retrieving queues when using ipaddress
+
             if (machineName == ".")
                 return MessageQueue.Exists(path);
 
@@ -255,5 +263,7 @@ namespace MiniBus
         IMessageQueue _errorQueue;
         IBusConfig _config;
         ILogMessages _logger = new NullLogger();
+
+        const string ipaddress = "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
     }
 }
