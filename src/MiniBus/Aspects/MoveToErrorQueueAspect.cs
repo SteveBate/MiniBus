@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Messaging;
 using MiniBus.Contracts;
+using System.Threading;
 
 namespace MiniBus.Aspects
 {
@@ -20,12 +21,13 @@ namespace MiniBus.Aspects
             {
                 _inner.Handle(msg);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 if (!_config.FailFast)
                 {
                     _logger.Log(string.Format("Message: {0} - Moving to error queue: {1}", msg.Label, _context.ErrorQueueName));
                     _context.ErrorQueue.Send(msg, msg.Label, MessageQueueTransactionType.Single);
+                    _config.ErrorActions.ForEach(a => ThreadPool.QueueUserWorkItem(cb => a(ex.Message)));
                 }
 
                 throw;

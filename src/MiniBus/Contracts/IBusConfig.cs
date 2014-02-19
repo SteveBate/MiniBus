@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace MiniBus.Contracts
 {
@@ -8,6 +9,7 @@ namespace MiniBus.Contracts
         string ReadQueue { get; set; }
         string ErrorQueue { get; set; }
         List<string> WriteQueues { get; }
+        List<Action<string>> ErrorActions { get; }
         bool AutoCreateLocalQueues { get; set; }
         bool InstallMsmq { get; set; }
         bool EnlistInAmbientTransactions { get; set; }

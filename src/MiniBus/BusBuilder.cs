@@ -86,6 +86,12 @@ namespace MiniBus
             return this;
         }
 
+        public BusBuilder OnErrorAsync(params Action<string>[] actions)
+        {
+            _config.ErrorActions.AddRange(actions);
+            return this;
+        }
+
         public IBus CreateBus()
         {
             if (string.IsNullOrEmpty(_config.ReadQueue) && _config.WriteQueues.Count == 0)

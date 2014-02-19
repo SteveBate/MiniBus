@@ -1,4 +1,5 @@
 ﻿using MiniBus.Contracts;
+using System;
 using System.Collections.Generic;
 
 namespace MiniBus
@@ -8,6 +9,7 @@ namespace MiniBus
         public BusConfig()
         {
             WriteQueues = new List<string>();
+            ErrorActions = new List<Action<string>>();
         }
 
         public int MaxRetries { get; set; }
@@ -20,5 +22,6 @@ namespace MiniBus
         public bool JsonSerialization { get; set; }
         public bool AutoDistributeOnSend { get; set; }
         public bool FailFast { get; set; }
+        public List<Action<string>> ErrorActions { get; set; }
     }
 }
