@@ -152,6 +152,10 @@ When creating the bus in the receiving application, you need to tell MiniBus whi
 
 In the sending application, you can tell MiniBus which queue(s) to send the message to via the DefineWriteQueue method. Unlike DefineErrorQueue and DefineReadQueue, DefineWriteQueue can be called many times. MiniBus will send a message to each queue that you declare with the DefineWriteQueue method.
 
+##### * DefineWriteQueues
+
+An alternative that allows all write queues to be defined in one call.
+
 ##### * CreateLocalQueuesAutomatically
 
 Queues can be on the same machine as the application or on a remote machine. Remote queues are declared in each of the Define&lt;whatever&gt;Queue methods by using the @ syntax. For example <strong>myqueue@remotepc</strong>. Local queues do not include the @ symbol or machine name. If you declare local queues and they do not exist, calling the CreateLocalQueuesAutomatically method will ensure the queues are created for you before you use the bus to send or receive messages.
@@ -175,6 +179,10 @@ By default, when sending messages MiniBus will send the same message to all the 
 ##### * FailFast
 
 Ordinarily when an error occurs processing a message it is moved to the designated error queue for later intervention. In most cases this is fine but sometimes it can be critical that message order is preserved. In other words, we don't want any subsequent messages to be processed until the failed message is fixed. The FailFast option causes the queue to immediately stop processing messages in the event of an error. The failing message itself stays on the read queue rather than being moved to the error queue so that when the issue is fixed it will be the first message to be processed.
+
+##### * OnErrorAsync
+
+Provides a hook to allow you to specify code that should be executed (asynchronously) if a message is placed on the error queue. Useful, for instance, for sending emails to notify an administrator.
 
 ## Building the Source
 
