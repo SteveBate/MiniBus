@@ -102,6 +102,12 @@ namespace MiniBus
             return this;
         }
 
+        public BusBuilder AutoPurgeSystemJournal()
+        {
+            _config.AutoPurgeSystemJournal = true;
+            return this;
+        }
+
         public IBus CreateBus()
         {
             if (string.IsNullOrEmpty(_config.ReadQueue) && _config.WriteQueues.Count == 0)
@@ -243,18 +249,18 @@ namespace MiniBus
 
         void CreateReadQueueFromPath(string path)
         {
-            _readQueue = new MiniBusMessageQueue(new MessageQueue(path), _logger);
+            _readQueue = new MiniBusMessageQueue(new MessageQueue(path), _logger, _config.AutoPurgeSystemJournal);
         }
 
         void CreateWriteQueueFromPath(string path)
         {
-            _writeQueues.Add(new MiniBusMessageQueue(new MessageQueue(path), _logger));
+            _writeQueues.Add(new MiniBusMessageQueue(new MessageQueue(path), _logger, _config.AutoPurgeSystemJournal));
         }
 
         void CreateQueueToPutErrorsOn(string machineName, string queueName, string path)
         {
             if (QueueExists(machineName, queueName, path))
-                _errorQueue = new MiniBusMessageQueue(new MessageQueue(path), _logger);
+                _errorQueue = new MiniBusMessageQueue(new MessageQueue(path), _logger, _config.AutoPurgeSystemJournal);
             else
                 throw new QueueNotFoundException(queueName + " doesn't exist. Did you type it correctly?");
         }

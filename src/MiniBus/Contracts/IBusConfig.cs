@@ -16,5 +16,6 @@ namespace MiniBus.Contracts
         bool JsonSerialization { get; set; }
         bool AutoDistributeOnSend { get; set; }
         bool FailFast { get; set; }
+        bool AutoPurgeSystemJournal { get; set; }
     }
 }

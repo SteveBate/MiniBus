@@ -17,5 +17,6 @@ namespace MiniBus.Tests.Fakes
         public bool JsonSerialization { get; set; }
         public bool AutoDistributeOnSend { get; set; }
         public bool FailFast { get; set; }
+        public bool AutoPurgeSystemJournal { get; set; }
     }
 }

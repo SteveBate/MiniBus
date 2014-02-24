@@ -23,5 +23,6 @@ namespace MiniBus
         public bool AutoDistributeOnSend { get; set; }
         public bool FailFast { get; set; }
         public List<Action<string>> ErrorActions { get; set; }
+        public bool AutoPurgeSystemJournal { get; set; }
     }
 }

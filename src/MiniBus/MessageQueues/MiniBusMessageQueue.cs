@@ -7,10 +7,11 @@ namespace MiniBus.MessageQueues
 {
     internal class MiniBusMessageQueue : IMessageQueue
     {
-        public MiniBusMessageQueue(MessageQueue queue, ILogMessages logger)
+        public MiniBusMessageQueue(MessageQueue queue, ILogMessages logger, bool autoPurgeSystemJournal)
         {
             _queue = queue;
             _logger = logger;
+            _autoPurgeSystemJournal = autoPurgeSystemJournal;
         }
         
         public string FormatName
@@ -21,6 +22,12 @@ namespace MiniBus.MessageQueues
         public void Send(Message message, string label, MessageQueueTransactionType transactionType)
         {
             _queue.Send(message, label, transactionType);
+
+            if (_autoPurgeSystemJournal && (_lastPurgedOn == DateTime.MinValue || _lastPurgedOn.AddMinutes(purgeIntervalInMinutes) < DateTime.Now))
+            {
+                systemJournalQueue.Purge();
+                _lastPurgedOn = DateTime.Now;
+            }
         }
 
         public void ReceiveById(string messageId, MessageQueueTransactionType transactionType)
@@ -37,9 +44,17 @@ namespace MiniBus.MessageQueues
                 {
                     _receiving = true;
                     var queue = (MessageQueue)source;
-                    Message m = queue.EndPeek(asyncResult.AsyncResult);
-                    current(m);
+                    using (Message m = queue.EndPeek(asyncResult.AsyncResult))
+                    {
+                        current(m);
+                    }
                     queue.BeginPeek();
+
+                    if (_autoPurgeSystemJournal && (_lastPurgedOn == DateTime.MinValue || _lastPurgedOn.AddMinutes(purgeIntervalInMinutes) < DateTime.Now))
+                    {
+                        systemJournalQueue.Purge();
+                        _lastPurgedOn = DateTime.Now;
+                    }
                 }
                 catch (MessageQueueException ex)
                 {
@@ -107,8 +122,15 @@ namespace MiniBus.MessageQueues
 
         readonly MessageQueue _queue;
         readonly ILogMessages _logger;
+        readonly bool _autoPurgeSystemJournal;
         PeekCompletedEventHandler _handler;
         bool _receiving;
         bool _disposed;
+        DateTime _lastPurgedOn = DateTime.MinValue;
+        const int purgeIntervalInMinutes = 15;
+
+        MessageQueue systemJournalQueue = new MessageQueue("FormatName:Direct=os:.\\System$;JOURNAL");
+
+        
     }
 }

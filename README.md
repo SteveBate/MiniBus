@@ -184,6 +184,10 @@ Ordinarily when an error occurs processing a message it is moved to the designat
 
 Provides a hook to allow you to specify code that should be executed (asynchronously) if a message is placed on the error queue. Useful, for instance, for sending emails to notify an administrator.
 
+##### * AutoPurgeSystemJournal
+
+Left unattended and with no administrator monitoring MSMQ can grind to a halt with an "insufficient resources" error. This occurs when the system32\msmq\storage directoy has grown too large with copies of each and every message placed on the "Journal Messages" system queue. Using the AutoPurgeSystemJournal option tells MiniBus to attempt to clean up this queue every fifteen minutes in order to reduce the chances of the error occuring.
+
 ## Building the Source
 
 If you want to build the source, clone the repository, and open up MiniBus.sln.
