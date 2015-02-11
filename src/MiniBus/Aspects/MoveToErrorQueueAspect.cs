@@ -23,11 +23,14 @@ namespace MiniBus.Aspects
             }
             catch (Exception ex)
             {
-                if (!_config.FailFast)
+                if (!_config.FailFast && !_config.DiscardFailures)
                 {
                     _logger.Log(string.Format("Message: {0} - Moving to error queue: {1}", msg.Label, _context.ErrorQueueName));
                     _context.ErrorQueue.Send(msg, msg.Label, MessageQueueTransactionType.Single);
-                    _config.ErrorActions.ForEach(a => ThreadPool.QueueUserWorkItem(cb => a(ex.Message)));
+                    if (_config.ErrorActions != null)
+                    {
+                        _config.ErrorActions.ForEach(a => ThreadPool.QueueUserWorkItem(cb => a(ex.Message)));
+                    }
                 }
 
                 throw;

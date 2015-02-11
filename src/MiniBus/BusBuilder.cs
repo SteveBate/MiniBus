@@ -96,6 +96,12 @@ namespace MiniBus
             return this;
         }
 
+        public BusBuilder DiscardFailedMessages()
+        {
+            _config.DiscardFailures = true;
+            return this;
+        }
+
         public BusBuilder OnErrorAsync(params Action<string>[] actions)
         {
             _config.ErrorActions.AddRange(actions);

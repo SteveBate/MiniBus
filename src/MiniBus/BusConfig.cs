@@ -22,6 +22,7 @@ namespace MiniBus
         public bool JsonSerialization { get; set; }
         public bool AutoDistributeOnSend { get; set; }
         public bool FailFast { get; set; }
+        public bool DiscardFailures { get; set; }
         public List<Action<string>> ErrorActions { get; set; }
         public bool AutoPurgeSystemJournal { get; set; }
     }

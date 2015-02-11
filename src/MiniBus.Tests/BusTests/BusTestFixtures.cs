@@ -273,6 +273,22 @@ namespace MiniBus.Tests.BusTests
         }
 
         [Test]
+        public void Should_discard_failed_messages_to_when_discard_failures_configured()
+        {
+            var logger = new FakeLogger();
+            var handler = new FakeExceptionThrowingUserHandler();
+            var errorQueue = new FakeValidMessageQueue();
+            var readQueue = QueueWithTwoMessages();
+            var bus = new Bus(new FakeBusConfig { DiscardFailures = true }, logger, errorQueue, readQueue, new[] { new FakeValidMessageQueue() });
+            bus.RegisterHandler(handler);
+
+            bus.Receive<FakeDto>();
+
+            Assert.That(errorQueue.Count, Is.EqualTo(0));
+            Assert.That(readQueue.Count, Is.EqualTo(0));
+        }
+
+        [Test]
         public void Should_log_retries_on_error()
         {
             var logger = new FakeLogger();

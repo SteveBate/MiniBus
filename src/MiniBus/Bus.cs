@@ -48,7 +48,7 @@ namespace MiniBus
                 var context = new WriteMessageContext(writeQueue);
                 var sendMessageHandler = new SendMessageHandler(context, _config, _logger);
                 var loggingAspect = new LoggingAspect(sendMessageHandler, SendOperation, _logger);
-                var transactionAspect = new TransactionAspect(loggingAspect, _logger);                
+                var transactionAspect = new TransactionAspect(loggingAspect, _logger);
                 transactionAspect.Handle(message);                
             }
         }
@@ -73,7 +73,8 @@ namespace MiniBus
                 var moveToErrorQueueAspect = new MoveToErrorQueueAspect(removeFromReadQueueAspect, context, _config, _logger);
                 var loggingAspect = new LoggingAspect(moveToErrorQueueAspect, ReceiveOperation, _logger);
                 var transactionAspect = new TransactionAspect(loggingAspect, _logger);
-                var failFastAspect = new FailFastAspect(transactionAspect, _config, _logger);
+                var discardAspect = new DiscardFailuresAspect(transactionAspect, _config, _logger);
+                var failFastAspect = new FailFastAspect(discardAspect, _config, _logger);
                 failFastAspect.Handle(message);
 
                 if (failFastAspect.Failed)
@@ -102,7 +103,8 @@ namespace MiniBus
                 var moveToErrorQueueAspect = new MoveToErrorQueueAspect(removeFromReadQueueAspect, context, _config, _logger);
                 var loggingAspect = new LoggingAspect(moveToErrorQueueAspect, ReceiveOperation, _logger);
                 var transactionAspect = new TransactionAspect(loggingAspect, _logger);
-                var failFastAspect = new FailFastAspect(transactionAspect, _config, _logger);
+                var discardAspect = new DiscardFailuresAspect(transactionAspect, _config, _logger);
+                var failFastAspect = new FailFastAspect(discardAspect, _config, _logger);
                 failFastAspect.Handle(message);
 
                 if (failFastAspect.Failed)

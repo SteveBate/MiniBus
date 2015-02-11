@@ -22,6 +22,7 @@ namespace MiniBus.Sample
             Console.WriteLine("7  - Fail fast");
             Console.WriteLine("8  - Fail fast async");
             Console.WriteLine("9  - Return error messages to read queue");
+            Console.WriteLine("A  - Fail and discard");
             Console.WriteLine("X  - exit");
 
             var selection = Console.ReadKey();
@@ -64,6 +65,10 @@ namespace MiniBus.Sample
                     ReturnErrorMessagesDemo();
                     break;
                     
+                case ConsoleKey.A:
+                    FailAndDiscardDemo();
+                    break;
+
                 case ConsoleKey.X:                    
                     break;
 
@@ -330,6 +335,35 @@ namespace MiniBus.Sample
             {
                 Console.WriteLine("Couldn't return error messages to the read queue: {0}", ex.Message);
             }
+
+            Console.WriteLine("\nPress a key to exit");
+            Console.ReadLine();
+            _bus.Dispose();
+        }
+
+        static void FailAndDiscardDemo()
+        {
+            // demonstrate receiving - Receive processes whatever messages happen to be on the queue at the time of the call
+
+            Console.WriteLine("\nPress a key to read message/s");
+            Console.ReadLine();
+
+            _bus = new BusBuilder()
+                .WithLogging(new FileLogger())
+                .InstallMsmqIfNeeded()
+                .DefineErrorQueue("MiniBus.errors")
+                .DefineReadQueue("MiniBus.messages1")
+                .CreateLocalQueuesAutomatically()
+                .EnlistInAmbientTransactions()
+                .JsonSerialization()
+                .NumberOfRetries(3)
+                .DiscardFailedMessages()
+                .CreateBus();
+
+            // pass true to have a message fail fast by stopping all message processing. Messages are left on the read queue
+            _bus.RegisterHandler(new PersonHandler(true));
+
+            _bus.Receive<Person>();
 
             Console.WriteLine("\nPress a key to exit");
             Console.ReadLine();
