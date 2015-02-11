@@ -183,7 +183,7 @@ Ordinarily when an error occurs processing a message it is moved to the designat
 
 ##### * DiscardFailedMessages
 
-Sometimes if a message fails you jsut don't care. Either it wasn't important or you know the same message will show up again soon, perhaps from a process that resends until a given state is determined. In this case setting the DiscardFailedMessages option will not put the failed message on the error queue. Instead it will just throw it away leaving the error queue maintenance free.
+Sometimes if a message fails you just don't care. Either it wasn't important or you know the same message will show up again soon, perhaps from a process that resends until a given state is determined. In this case setting the DiscardFailedMessages option will not put the failed message on the error queue, instead it will just throw it away leaving the error queue maintenance free.
 
 ##### * OnErrorAsync
 
