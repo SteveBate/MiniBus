@@ -18,6 +18,7 @@ MiniBus offers the following features:
 * Simple logging support
 * Return error messages back to the read queue
 * Fail fast option
+* Discard failures
 
 ## How to use
 
@@ -91,7 +92,7 @@ Or **ReceiveAsync** for asynchronous processing:
 // register one or more message handlers
 bus.RegisterHandler<Person>(new PersonHandler());
 
-// process messages on the read queue synchronously
+// process messages on the read queue asynchronously
 bus.ReceiveAsync<Person>();
 ```
 		
@@ -179,6 +180,10 @@ By default, when sending messages MiniBus will send the same message to all the 
 ##### * FailFast
 
 Ordinarily when an error occurs processing a message it is moved to the designated error queue for later intervention. In most cases this is fine but sometimes it can be critical that message order is preserved. In other words, we don't want any subsequent messages to be processed until the failed message is fixed. The FailFast option causes the queue to immediately stop processing messages in the event of an error. The failing message itself stays on the read queue rather than being moved to the error queue so that when the issue is fixed it will be the first message to be processed.
+
+##### * DiscardFailedMessages
+
+Sometimes if a message fails you jsut don't care. Either it wasn't important or you know the same message will show up again soon, perhaps from a process that resends until a given state is determined. In this case setting the DiscardFailedMessages option will not put the failed message on the error queue. Instead it will just throw it away leaving the error queue maintenance free.
 
 ##### * OnErrorAsync
 
