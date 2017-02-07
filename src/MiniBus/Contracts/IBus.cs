@@ -4,6 +4,7 @@ namespace MiniBus.Contracts
 {
     public interface IBus : IDisposable
     {
+        void Copy(string messageId);
         void RegisterHandler<T>(IHandleMessage<T> handler);
         void Send<T>(T message);
         void Receive<T>();

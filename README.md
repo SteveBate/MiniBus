@@ -2,6 +2,8 @@
 
 A small .Net messaging library built on top of MSMQ for application integration scenarios. Support for transactions, automatic retries, json serialization, and more. Provides a simple and reliable way of integrating applications and services via message queues minus the complexity of a full-on ESB.
 
+* NOTE - MiniBus now appears as mini.bus in nuget package manager
+
 ## Features
 
 MiniBus offers the following features:
@@ -17,6 +19,7 @@ MiniBus offers the following features:
 * Install MSMQ if not detected
 * Simple logging support
 * Return error messages back to the read queue
+* Copy message to one or more queues
 * Fail fast option
 * Discard failures
 

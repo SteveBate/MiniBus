@@ -138,6 +138,32 @@ namespace MiniBus
         }
 
         /// <summary>
+        /// Read specific message of the given read queue identified by the messageId parameter and copy it to one or more specified write queues
+        /// </summary>
+        /// <param name="messageId"></param>
+        public void Copy(string messageId)
+        {
+            if (_errorQueue == null || !_errorQueue.IsInitialized || _readQueue == null || !_readQueue.IsInitialized)
+                throw new BusException("Bus has not been configured for copying messages from the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
+
+            if (!_writeQueueManager.HasWriteQueues)
+                throw new BusException("Bus has not been configured for returning messages to a write queue. Did you forget to call DefineWriteQueue on BusBuilder?");
+
+            try
+            {
+                var message = _readQueue.GetMessageBy(messageId);
+                var context = new WriteMessageContext(_writeQueueManager.GetWriteQueues().First());
+                var copyMessageHandler = new CopyMessageHandler(context, _config, _logger);
+                var loggingAspect = new LoggingAspect(copyMessageHandler, SendOperation, _logger);
+                loggingAspect.Handle(message);
+            }
+            catch (Exception ex)
+            {
+                throw new BusException($"A problem occurred copying message: {messageId} - error: {ex}");
+            }
+        }
+
+        /// <summary>
         /// Read specific message off the defined error queue and move it to the user defined read queue
         /// </summary>
         public void ReturnErrorMessage(string id)

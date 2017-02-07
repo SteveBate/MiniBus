@@ -61,6 +61,7 @@
     <Compile Include="Contracts\IMessageQueue.cs" />
     <Compile Include="Contracts\IWriteMessageContext.cs" />
     <Compile Include="Handlers\ReceiveMessageHandler.cs" />
+    <Compile Include="Handlers\CopyMessageHandler.cs" />
     <Compile Include="Handlers\ReturnToSourceHandler.cs" />
     <Compile Include="Handlers\SendMessageHandler.cs" />
     <Compile Include="Exceptions\BusException.cs" />
