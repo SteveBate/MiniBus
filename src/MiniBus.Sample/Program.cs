@@ -23,6 +23,7 @@ namespace MiniBus.Sample
             Console.WriteLine("8  - Fail fast async");
             Console.WriteLine("9  - Return error messages to read queue");
             Console.WriteLine("A  - Fail and discard");
+            Console.WriteLine("B  - Test multiple handlers");
             Console.WriteLine("X  - exit");
 
             var selection = Console.ReadKey();
@@ -67,6 +68,10 @@ namespace MiniBus.Sample
                     
                 case ConsoleKey.A:
                     FailAndDiscardDemo();
+                    break;
+
+                case ConsoleKey.B:
+                    ReceiveMultiplesDemo();
                     break;
 
                 case ConsoleKey.X:                    
@@ -369,6 +374,43 @@ namespace MiniBus.Sample
             Console.ReadLine();
             _bus.Dispose();
         }
+
+        static void ReceiveMultiplesDemo()
+        {
+            // demonstrate receiving in multiple handlers
+
+            Console.WriteLine("\nPress a key to read message/s");
+            Console.ReadLine();
+
+            _bus = new BusBuilder()
+                .WithLogging(new FileLogger())
+                .InstallMsmqIfNeeded()
+                .DefineErrorQueue("MiniBus.errors")
+                .DefineReadQueue("MiniBus.basicmessages")
+                .DefineWriteQueue("MiniBus.basicmessages")
+                .CreateLocalQueuesAutomatically()
+                .EnlistInAmbientTransactions()
+                .JsonSerialization()
+                .NumberOfRetries(3)
+                .DiscardFailedMessages()
+                .CreateBus();
+
+            // register different handlers
+            _bus.RegisterHandler(new NumberHandler());
+            _bus.RegisterHandler(new SquaredNumberHandler());
+            _bus.RegisterHandler(new CubedNumberHandler());
+
+            _bus.ReceiveAsync<int>();
+
+            _bus.Send(101);
+            _bus.Send(42);
+            _bus.Send(18);
+            _bus.Send(5);
+
+            Console.WriteLine("\nPress a key to exit");
+            Console.ReadLine();
+            _bus.Dispose();
+        }
     }
 
     public class Person
@@ -419,5 +461,29 @@ namespace MiniBus.Sample
         }
 
         bool _throwException;
-    }    
+    }
+    
+    class NumberHandler : IHandleMessage<int>
+    {
+        public void Handle(int x)
+        {
+            Console.WriteLine("Received number: {0}", x);
+        }
+    }
+
+    class SquaredNumberHandler : IHandleMessage<int>
+    {
+        public void Handle(int x)
+        {
+            Console.WriteLine("Received number squared: {0} x {0} = {1}", x, x * x);
+        }
+    }
+
+    class CubedNumberHandler : IHandleMessage<int>
+    {
+        public void Handle(int x)
+        {
+            Console.WriteLine("Received number cubed: {0} x {0} x {0} = {1}", x,  x * x * x);
+        }
+    }
 }
