@@ -11,7 +11,9 @@ namespace MiniBus.Formatters
         public bool CanRead(Message message)
         {
             if (message == null)
+            {
                 throw new ArgumentNullException("message");
+            }
 
             var stream = message.BodyStream;
 
@@ -23,10 +25,14 @@ namespace MiniBus.Formatters
         public object Read(Message message)
         {
             if (message == null)
+            {
                 throw new ArgumentNullException("message");
+            }
 
             if (CanRead(message) == false)
+            {
                 return null;
+            }
 
             using (var reader = new StreamReader(message.BodyStream, Encoding.Default))
             {
@@ -38,10 +44,14 @@ namespace MiniBus.Formatters
         public void Write(Message message, object obj)
         {
             if (message == null)
+            {
                 throw new ArgumentNullException("message");
+            }
 
             if (obj == null)
+            {
                 throw new ArgumentNullException("obj");
+            }
 
             string json = SimpleJson.SerializeObject(obj);
 

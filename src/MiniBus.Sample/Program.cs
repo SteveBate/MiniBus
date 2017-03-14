@@ -196,10 +196,14 @@ namespace MiniBus.Sample
             Console.WriteLine("\nPress S to start/stop listening to messages or any other key to exit");
             while(Console.ReadKey().Key == ConsoleKey.S)
             {
-                if (stopped)                    
+                if (stopped)
+                {
                     _bus.ReceiveAsync<Person>();
+                }
                 else
+                {
                     _bus.StopReceiving();
+                }
 
                 stopped = !stopped;
             }
@@ -332,9 +336,13 @@ namespace MiniBus.Sample
             try
             {
                 if (messageid == "all")
+                {
                     _bus.ReturnAllErrorMessages();
+                }
                 else
+                {
                     _bus.ReturnErrorMessage(messageid);
+                }
             }
             catch (Exception ex)
             {

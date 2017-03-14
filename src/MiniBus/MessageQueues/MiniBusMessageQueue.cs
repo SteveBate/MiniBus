@@ -37,7 +37,7 @@ namespace MiniBus.MessageQueues
 
         public void ReceiveAsync(Action<Message> current)
         {
-            if (_receiving) return;
+            if (_receiving) {return;}
             
             _handler = (source, asyncResult) => {                     
                 try
@@ -109,12 +109,14 @@ namespace MiniBus.MessageQueues
 
         void Dispose(bool disposing)
         {
-            if (_disposed) return;
+            if (_disposed) {return;}
 
             if (disposing)
             {
                 if (_queue != null)
+                {
                     _queue.Dispose();
+                }
             }
 
             _disposed = true;

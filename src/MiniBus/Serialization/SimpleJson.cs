@@ -148,12 +148,16 @@ namespace MiniBus.Serialization
         internal static object GetAtIndex(IDictionary<string, object> obj, int index)
         {
             if (obj == null)
+            {
                 throw new ArgumentNullException("obj");
+            }
             if (index >= obj.Count)
+            {
                 throw new ArgumentOutOfRangeException("index");
+            }
             int i = 0;
             foreach (KeyValuePair<string, object> o in obj)
-                if (i++ == index) return o.Value;
+                if (i++ == index) {return o.Value;}
             return null;
         }
 
@@ -264,13 +268,15 @@ namespace MiniBus.Serialization
         /// <param name="arrayIndex">Index of the array.</param>
         public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
         {
-            if (array == null) throw new ArgumentNullException("array");
+            if (array == null) {throw new ArgumentNullException("array");}
             int num = Count;
             foreach (KeyValuePair<string, object> kvp in this)
             {
                 array[arrayIndex++] = kvp;
                 if (--num <= 0)
+                {
                     return;
+                }
             }
         }
 
@@ -511,7 +517,9 @@ namespace MiniBus.Serialization
         {
             object obj;
             if (TryDeserializeObject(json, out obj))
+            {
                 return obj;
+            }
             throw new SerializationException("Invalid JSON string");
         }
 
@@ -587,7 +595,9 @@ namespace MiniBus.Serialization
         public static string EscapeToJavascriptString(string jsonString)
         {
             if (string.IsNullOrEmpty(jsonString))
+            {
                 return jsonString;
+            }
 
             StringBuilder sb = new StringBuilder();
             char c;
@@ -660,7 +670,9 @@ namespace MiniBus.Serialization
                     return null;
                 }
                 else if (token == TOKEN_COMMA)
+                {
                     NextToken(json, ref index);
+                }
                 else if (token == TOKEN_CURLY_CLOSE)
                 {
                     NextToken(json, ref index);
@@ -712,7 +724,9 @@ namespace MiniBus.Serialization
                     return null;
                 }
                 else if (token == TOKEN_COMMA)
+                {
                     NextToken(json, ref index);
+                }
                 else if (token == TOKEN_SQUARED_CLOSE)
                 {
                     NextToken(json, ref index);
@@ -722,7 +736,9 @@ namespace MiniBus.Serialization
                 {
                     object value = ParseValue(json, ref index, ref success);
                     if (!success)
+                    {
                         return null;
+                    }
                     array.Add(value);
                 }
             }
@@ -770,7 +786,9 @@ namespace MiniBus.Serialization
             while (!complete)
             {
                 if (index == json.Length)
+                {
                     break;
+                }
 
                 c = json[index++];
                 if (c == '"')
@@ -781,24 +799,43 @@ namespace MiniBus.Serialization
                 else if (c == '\\')
                 {
                     if (index == json.Length)
+                    {
                         break;
+                    }
                     c = json[index++];
                     if (c == '"')
+                    {
                         s.Append('"');
+                    }
+                        
                     else if (c == '\\')
+                    {
                         s.Append('\\');
+                    }
                     else if (c == '/')
+                    {
                         s.Append('/');
+                    }
                     else if (c == 'b')
+                    {
                         s.Append('\b');
+                    }
                     else if (c == 'f')
+                    {
                         s.Append('\f');
+                    }
                     else if (c == 'n')
+                    {
                         s.Append('\n');
+                    }
                     else if (c == 'r')
+                    {
                         s.Append('\r');
+                    }
                     else if (c == 't')
+                    {
                         s.Append('\t');
+                    }
                     else if (c == 'u')
                     {
                         int remainingLength = json.Length - index;
@@ -807,7 +844,9 @@ namespace MiniBus.Serialization
                             // parse the 32 bit hex into an integer codepoint
                             uint codePoint;
                             if (!(success = UInt32.TryParse(new string(json, index, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out codePoint)))
+                            {
                                 return "";
+                            }
 
                             // convert the integer codepoint to a unicode char and add to string
                             if (0xD800 <= codePoint && codePoint <= 0xDBFF)  // if high surrogate
@@ -854,11 +893,17 @@ namespace MiniBus.Serialization
         {
             // http://www.java2s.com/Open-Source/CSharp/2.6.4-mono-.net-core/System/System/Char.cs.htm
             if (utf32 < 0 || utf32 > 0x10FFFF)
+            {
                 throw new ArgumentOutOfRangeException("utf32", "The argument must be from 0 to 0x10FFFF.");
+            }
             if (0xD800 <= utf32 && utf32 <= 0xDFFF)
+            {
                 throw new ArgumentOutOfRangeException("utf32", "The argument must not be in surrogate pair range.");
+            }
             if (utf32 < 0x10000)
+            {
                 return new string((char)utf32, 1);
+            }
             utf32 -= 0x10000;
             return new string(new char[] { (char)((utf32 >> 10) + 0xD800), (char)(utf32 % 0x0400 + 0xDC00) });
         }
@@ -890,14 +935,14 @@ namespace MiniBus.Serialization
         {
             int lastIndex;
             for (lastIndex = index; lastIndex < json.Length; lastIndex++)
-                if ("0123456789+-.eE".IndexOf(json[lastIndex]) == -1) break;
+                if ("0123456789+-.eE".IndexOf(json[lastIndex]) == -1) {break;}
             return lastIndex - 1;
         }
 
         static void EatWhitespace(char[] json, ref int index)
         {
             for (; index < json.Length; index++)
-                if (" \t\n\r\b\f".IndexOf(json[index]) == -1) break;
+                if (" \t\n\r\b\f".IndexOf(json[index]) == -1) {break;}
         }
 
         static int LookAhead(char[] json, int index)
@@ -911,7 +956,9 @@ namespace MiniBus.Serialization
         {
             EatWhitespace(json, ref index);
             if (index == json.Length)
+            {
                 return TOKEN_NONE;
+            }
             char c = json[index];
             index++;
             switch (c)
@@ -980,7 +1027,9 @@ namespace MiniBus.Serialization
             bool success = true;
             string stringValue = value as string;
             if (stringValue != null)
+            {
                 success = SerializeString(stringValue, builder);
+            }
             else
             {
                 IDictionary<string, object> dict = value as IDictionary<string, object>;
@@ -999,19 +1048,29 @@ namespace MiniBus.Serialization
                     {
                         IEnumerable enumerableValue = value as IEnumerable;
                         if (enumerableValue != null)
+                        {
                             success = SerializeArray(jsonSerializerStrategy, enumerableValue, builder);
+                        }
                         else if (IsNumeric(value))
+                        {
                             success = SerializeNumber(value, builder);
+                        }
                         else if (value is bool)
+                        {
                             builder.Append((bool)value ? "true" : "false");
+                        }
                         else if (value == null)
+                        {
                             builder.Append("null");
+                        }
                         else
                         {
                             object serializedObject;
                             success = jsonSerializerStrategy.TrySerializeNonPrimitiveObject(value, out serializedObject);
                             if (success)
+                            {
                                 SerializeValue(jsonSerializerStrategy, serializedObject, builder);
+                            }
                         }
                     }
                 }
@@ -1030,15 +1089,23 @@ namespace MiniBus.Serialization
                 object key = ke.Current;
                 object value = ve.Current;
                 if (!first)
+                {
                     builder.Append(",");
+                }
                 string stringKey = key as string;
                 if (stringKey != null)
+                {
                     SerializeString(stringKey, builder);
+                }
                 else
-                    if (!SerializeValue(jsonSerializerStrategy, value, builder)) return false;
+                {
+                    if (!SerializeValue(jsonSerializerStrategy, value, builder)) { return false; }
+                }
                 builder.Append(":");
                 if (!SerializeValue(jsonSerializerStrategy, value, builder))
+                {
                     return false;
+                }
                 first = false;
             }
             builder.Append("}");
@@ -1052,9 +1119,13 @@ namespace MiniBus.Serialization
             foreach (object value in anArray)
             {
                 if (!first)
+                {
                     builder.Append(",");
+                }
                 if (!SerializeValue(jsonSerializerStrategy, value, builder))
+                {
                     return false;
+                }
                 first = false;
             }
             builder.Append("]");
@@ -1069,21 +1140,37 @@ namespace MiniBus.Serialization
             {
                 char c = charArray[i];
                 if (c == '"')
+                {
                     builder.Append("\\\"");
+                }
                 else if (c == '\\')
+                {
                     builder.Append("\\\\");
+                }
                 else if (c == '\b')
+                {
                     builder.Append("\\b");
+                }
                 else if (c == '\f')
+                {
                     builder.Append("\\f");
+                }
                 else if (c == '\n')
+                {
                     builder.Append("\\n");
+                }
                 else if (c == '\r')
+                {
                     builder.Append("\\r");
+                }
                 else if (c == '\t')
+                {
                     builder.Append("\\t");
+                }
                 else
+                {
                     builder.Append(c);
+                }
             }
             builder.Append("\"");
             return true;
@@ -1092,19 +1179,33 @@ namespace MiniBus.Serialization
         static bool SerializeNumber(object number, StringBuilder builder)
         {
             if (number is long)
+            {
                 builder.Append(((long)number).ToString(CultureInfo.InvariantCulture));
+            }
             else if (number is ulong)
+            {
                 builder.Append(((ulong)number).ToString(CultureInfo.InvariantCulture));
+            }
             else if (number is int)
+            {
                 builder.Append(((int)number).ToString(CultureInfo.InvariantCulture));
+            }
             else if (number is uint)
+            {
                 builder.Append(((uint)number).ToString(CultureInfo.InvariantCulture));
+            }
             else if (number is decimal)
+            {
                 builder.Append(((decimal)number).ToString(CultureInfo.InvariantCulture));
+            }
             else if (number is float)
-                builder.Append(((float)number).ToString(CultureInfo.InvariantCulture));
+            {
+                builder.Append(((float) number).ToString(CultureInfo.InvariantCulture));
+            }
             else
+            {
                 builder.Append(Convert.ToDouble(number, CultureInfo.InvariantCulture).ToString("r", CultureInfo.InvariantCulture));
+            }
             return true;
         }
 
@@ -1114,17 +1215,17 @@ namespace MiniBus.Serialization
         /// </summary>
         static bool IsNumeric(object value)
         {
-            if (value is sbyte) return true;
-            if (value is byte) return true;
-            if (value is short) return true;
-            if (value is ushort) return true;
-            if (value is int) return true;
-            if (value is uint) return true;
-            if (value is long) return true;
-            if (value is ulong) return true;
-            if (value is float) return true;
-            if (value is double) return true;
-            if (value is decimal) return true;
+            if (value is sbyte) {return true;}
+            if (value is byte) {return true;}
+            if (value is short) {return true;}
+            if (value is ushort) {return true;}
+            if (value is int) {return true;}
+            if (value is uint) {return true;}
+            if (value is long) {return true;}
+            if (value is ulong) {return true;}
+            if (value is float) {return true;}
+            if (value is double) {return true;}
+            if (value is decimal) {return true;}
             return false;
         }
 
@@ -1234,14 +1335,18 @@ namespace MiniBus.Serialization
                 {
                     MethodInfo getMethod = ReflectionUtils.GetGetterMethodInfo(propertyInfo);
                     if (getMethod.IsStatic || !getMethod.IsPublic)
+                    {
                         continue;
+                    }
                     result[MapClrMemberNameToJsonFieldName(propertyInfo.Name)] = ReflectionUtils.GetGetMethod(propertyInfo);
                 }
             }
             foreach (FieldInfo fieldInfo in ReflectionUtils.GetFields(type))
             {
                 if (fieldInfo.IsStatic || !fieldInfo.IsPublic)
+                {
                     continue;
+                }
                 result[MapClrMemberNameToJsonFieldName(fieldInfo.Name)] = ReflectionUtils.GetGetMethod(fieldInfo);
             }
             return result;
@@ -1256,14 +1361,18 @@ namespace MiniBus.Serialization
                 {
                     MethodInfo setMethod = ReflectionUtils.GetSetterMethodInfo(propertyInfo);
                     if (setMethod.IsStatic || !setMethod.IsPublic)
+                    {
                         continue;
+                    }
                     result[MapClrMemberNameToJsonFieldName(propertyInfo.Name)] = new KeyValuePair<Type, ReflectionUtils.SetDelegate>(propertyInfo.PropertyType, ReflectionUtils.GetSetMethod(propertyInfo));
                 }
             }
             foreach (FieldInfo fieldInfo in ReflectionUtils.GetFields(type))
             {
                 if (fieldInfo.IsInitOnly || fieldInfo.IsStatic || !fieldInfo.IsPublic)
+                {
                     continue;
+                }
                 result[MapClrMemberNameToJsonFieldName(fieldInfo.Name)] = new KeyValuePair<Type, ReflectionUtils.SetDelegate>(fieldInfo.FieldType, ReflectionUtils.GetSetMethod(fieldInfo));
             }
             return result;
@@ -1277,14 +1386,18 @@ namespace MiniBus.Serialization
         [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public virtual object DeserializeObject(object value, Type type)
         {
-            if (type == null) throw new ArgumentNullException("type");
+            if (type == null) {throw new ArgumentNullException("type");}
             string str = value as string;
 
-            if (type == typeof (Guid) && string.IsNullOrEmpty(str))
+            if (type == typeof(Guid) && string.IsNullOrEmpty(str))
+            {
                 return default(Guid);
+            }
 
             if (value == null)
+            {
                 return null;
+            }
             
             object obj = null;
 
@@ -1293,33 +1406,51 @@ namespace MiniBus.Serialization
                 if (str.Length != 0) // We know it can't be null now.
                 {
                     if (type == typeof(DateTime) || (ReflectionUtils.IsNullableType(type) && Nullable.GetUnderlyingType(type) == typeof(DateTime)))
+                    {
                         return DateTime.ParseExact(str, Iso8601Format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+                    }
                     if (type == typeof(DateTimeOffset) || (ReflectionUtils.IsNullableType(type) && Nullable.GetUnderlyingType(type) == typeof(DateTimeOffset)))
+                    {
                         return DateTimeOffset.ParseExact(str, Iso8601Format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+                    }
                     if (type == typeof(Guid) || (ReflectionUtils.IsNullableType(type) && Nullable.GetUnderlyingType(type) == typeof(Guid)))
+                    {
                         return new Guid(str);
+                    }
                     return str;
                 }
                 else
                 {
                     if (type == typeof(Guid))
+                    {
                         obj = default(Guid);
+                    }
                     else if (ReflectionUtils.IsNullableType(type) && Nullable.GetUnderlyingType(type) == typeof(Guid))
+                    {
                         obj = null;
+                    }
                     else
+                    {
                         obj = str;
+                    }
                 }
                 // Empty string case
                 if (!ReflectionUtils.IsNullableType(type) && Nullable.GetUnderlyingType(type) == typeof(Guid))
+                {
                     return str;
+                }
             }
             else if (value is bool)
+            {
                 return value;
+            }
             
             bool valueIsLong = value is long;
             bool valueIsDouble = value is double;
             if ((valueIsLong && type == typeof(long)) || (valueIsDouble && type == typeof(double)))
+            {
                 return value;
+            }
             if ((valueIsDouble && type != typeof(double)) || (valueIsLong && type != typeof(long)))
             {
                 obj = type == typeof(int) || type == typeof(long) || type == typeof(double) || type == typeof(float) || type == typeof(bool) || type == typeof(decimal) || type == typeof(byte) || type == typeof(short)
@@ -1352,7 +1483,9 @@ namespace MiniBus.Serialization
                     else
                     {
                         if (type == typeof(object))
+                        {
                             obj = value;
+                        }
                         else
                         {
                             obj = ConstructorCache[type]();
@@ -1396,7 +1529,9 @@ namespace MiniBus.Serialization
                 return obj;
             }
             if (ReflectionUtils.IsNullableType(type))
+            {
                 return ReflectionUtils.ToNullableType(obj, type);
+            }
             return obj;
         }
 
@@ -1410,18 +1545,28 @@ namespace MiniBus.Serialization
         {
             bool returnValue = true;
             if (input is DateTime)
+            {
                 output = ((DateTime)input).ToUniversalTime().ToString(Iso8601Format[0], CultureInfo.InvariantCulture);
+            }
             else if (input is DateTimeOffset)
+            {
                 output = ((DateTimeOffset)input).ToUniversalTime().ToString(Iso8601Format[0], CultureInfo.InvariantCulture);
+            }
             else if (input is Guid)
+            {
                 output = ((Guid)input).ToString("D");
+            }
             else if (input is Uri)
+            {
                 output = input.ToString();
+            }
             else
             {
                 Enum inputEnum = input as Enum;
                 if (inputEnum != null)
+                {
                     output = SerializeEnum(inputEnum);
+                }
                 else
                 {
                     returnValue = false;
@@ -1433,17 +1578,21 @@ namespace MiniBus.Serialization
         [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification="Need to support .NET 2")]
         protected virtual bool TrySerializeUnknownTypes(object input, out object output)
         {
-            if (input == null) throw new ArgumentNullException("input");
+            if (input == null) {throw new ArgumentNullException("input");}
             output = null;
             Type type = input.GetType();
             if (type.FullName == null)
+            {
                 return false;
+            }
             IDictionary<string, object> obj = new JsonObject();
             IDictionary<string, ReflectionUtils.GetDelegate> getters = GetCache[type];
             foreach (KeyValuePair<string, ReflectionUtils.GetDelegate> getter in getters)
             {
                 if (getter.Value != null)
+                {
                     obj.Add(MapClrMemberNameToJsonFieldName(getter.Key), getter.Value(input));
+                }
             }
             output = obj;
             return true;
@@ -1567,7 +1716,9 @@ namespace MiniBus.Serialization
                 return info.GetCustomAttribute(type);
 #else
             if (info == null || type == null || !Attribute.IsDefined(info, type))
+            {
                 return null;
+            }
             return Attribute.GetCustomAttribute(info, type);
 #endif
         }
@@ -1600,7 +1751,9 @@ namespace MiniBus.Serialization
                 return objectType.GetTypeInfo().GetCustomAttribute(attributeType);
 #else
             if (objectType == null || attributeType == null || !Attribute.IsDefined(objectType, attributeType))
+            {
                 return null;
+            }
             return Attribute.GetCustomAttribute(objectType, attributeType);
 #endif
         }
@@ -1622,7 +1775,9 @@ namespace MiniBus.Serialization
         public static bool IsTypeGenericeCollectionInterface(Type type)
         {
             if (!IsTypeGeneric(type))
+            {
                 return false;
+            }
 
             Type genericDefinition = type.GetGenericTypeDefinition();
 
@@ -1641,10 +1796,14 @@ namespace MiniBus.Serialization
                     return true;
 #else
             if (typeof(System.Collections.IDictionary).IsAssignableFrom(type))
+            {
                 return true;
+            }
 #endif
             if (!GetTypeInfo(type).IsGenericType)
+            {
                 return false;
+            }
 
             Type genericDefinition = type.GetGenericTypeDefinition();
             return genericDefinition == typeof(IDictionary<,>);
@@ -1683,7 +1842,9 @@ namespace MiniBus.Serialization
             {
                 ParameterInfo[] parameters = constructorInfo.GetParameters();
                 if (argsType.Length != parameters.Length)
+                {
                     continue;
+                }
 
                 i = 0;
                 matches = true;
@@ -1697,7 +1858,9 @@ namespace MiniBus.Serialization
                 }
 
                 if (matches)
+                {
                     return constructorInfo;
+                }
             }
 
             return null;
@@ -1933,10 +2096,14 @@ namespace MiniBus.Serialization
             private TValue Get(TKey key)
             {
                 if (_dictionary == null)
+                {
                     return AddValue(key);
+                }
                 TValue value;
                 if (!_dictionary.TryGetValue(key, out value))
+                {
                     return AddValue(key);
+                }
                 return value;
             }
 
@@ -1954,7 +2121,9 @@ namespace MiniBus.Serialization
                     {
                         TValue val;
                         if (_dictionary.TryGetValue(key, out val))
+                        {
                             return val;
+                        }
                         Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>(_dictionary);
                         dict[key] = value;
                         _dictionary = dict;

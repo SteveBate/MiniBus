@@ -38,7 +38,9 @@ namespace MiniBus.MessageQueues
             foreach (var writeQueue in _writeQueues)
             {
                 if (writeQueue != null)
+                {
                     writeQueue.Dispose();
+                }
             }
         }
 
