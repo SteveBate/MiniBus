@@ -32,8 +32,10 @@ namespace MiniBus.Infrastructure
 
                 process.OutputDataReceived += (sender, e) =>
                 {
-                    if (e.Data != null)                        
+                    if (e.Data != null)
+                    {
                         output.AppendLine(e.Data);                        
+                    }                        
                 };
 
                 process.Start();
@@ -61,7 +63,9 @@ namespace MiniBus.Infrastructure
 
             // For 32-bit processes on 64-bit systems, %windir%\system32 folder can only be accessed by specifying %windir%\sysnative folder.
             if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
+            {
                 system32Directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "sysnative");
+            }
 
             // Windows 7 / 8 / 2008R2 / 2012
             string filename = system32Directory + "\\dism.exe";
@@ -71,7 +75,9 @@ namespace MiniBus.Infrastructure
         static string ParseForElevatedPermissionsError(string output)
         {
             if (output.Contains("Error: 740"))
+            {
                 throw new BusException(output);
+            }
 
             return output;
         }

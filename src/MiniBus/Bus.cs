@@ -40,7 +40,9 @@ namespace MiniBus
         public void Send<T>(T dto)
         {
             if (!_writeQueueManager.HasWriteQueues)
+            {
                 throw new BusException("Bus has not been configured for sending messages. Did you forget to call DefineWriteQueue on BusBuilder?");
+            }
 
             foreach (var writeQueue in _writeQueueManager.GetWriteQueues())
             {
@@ -61,8 +63,10 @@ namespace MiniBus
         /// </summary>
         public void Receive<T>()
         {
-            if (_readQueue == null || !_readQueue.IsInitialized) 
+            if (_readQueue == null || !_readQueue.IsInitialized)
+            {
                 throw new BusException("Bus has not been configured for receiving messages. Did you forget to call DefineReadQueue on BusBuilder?");
+            }
 
             foreach (Message message in _readQueue.GetAllMessages())
             {                
@@ -78,7 +82,9 @@ namespace MiniBus
                 failFastAspect.Handle(message);
 
                 if (failFastAspect.Failed)
+                {
                     break;
+                }
             }            
         }
 
@@ -92,7 +98,9 @@ namespace MiniBus
         public void ReceiveAsync<T>()
         {
             if (_readQueue == null || !_readQueue.IsInitialized)
+            {
                 throw new BusException("Bus has not been configured for receiving messages. Did you forget to call DefineReadQueue on BusBuilder?");
+            }
 
             _readQueue.ReceiveAsync(message => {
 
@@ -108,7 +116,9 @@ namespace MiniBus
                 failFastAspect.Handle(message);
 
                 if (failFastAspect.Failed)
+                {
                     _readQueue.StopReceiveAsync();
+                }
             });
         }
 
@@ -119,7 +129,9 @@ namespace MiniBus
         public void ReturnAllErrorMessages()
         {
             if ((_errorQueue == null || !_errorQueue.IsInitialized) || (_readQueue == null || !_readQueue.IsInitialized))
+            {
                 throw new BusException("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
+            }
 
             try
             {
@@ -144,10 +156,14 @@ namespace MiniBus
         public void Copy(string messageId)
         {
             if (_errorQueue == null || !_errorQueue.IsInitialized || _readQueue == null || !_readQueue.IsInitialized)
+            {
                 throw new BusException("Bus has not been configured for copying messages from the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
+            }
 
             if (!_writeQueueManager.HasWriteQueues)
+            {
                 throw new BusException("Bus has not been configured for returning messages to a write queue. Did you forget to call DefineWriteQueue on BusBuilder?");
+            }
 
             try
             {
@@ -169,7 +185,9 @@ namespace MiniBus
         public void ReturnErrorMessage(string id)
         {
             if ((_errorQueue == null || !_errorQueue.IsInitialized) || (_readQueue == null || !_readQueue.IsInitialized))
+            {
                 throw new BusException("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
+            }
 
             try
             {
@@ -220,16 +238,20 @@ namespace MiniBus
 
         void Dispose(bool disposing)
         {
-            if (_disposed) return;
+            if (_disposed) {return;}
 
             if (disposing)
             {
                 _writeQueueManager.Dispose();
 
                 if (_readQueue != null)
+                {
                     _readQueue.Dispose();
+                }
                 if (_errorQueue != null)
+                {
                     _errorQueue.Dispose();
+                }
             }
 
             _disposed = true;

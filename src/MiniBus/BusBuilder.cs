@@ -117,10 +117,14 @@ namespace MiniBus
         public IBus CreateBus()
         {
             if (string.IsNullOrEmpty(_config.ReadQueue) && _config.WriteQueues.Count == 0)
+            {
                 throw new ArgumentException("You need to supply at least one endpoint either to read from or to write to");
+            }
 
             if (string.IsNullOrEmpty(_config.ErrorQueue))
+            {
                 throw new ArgumentException("You need to define an endpoint for error messages");
+            }
 
             InitializeMsmq(() =>
             {
@@ -204,7 +208,9 @@ namespace MiniBus
             string machineName = ".";
 
             if (queue.Contains("@"))
+            {
                 machineName = queue.Substring(queue.IndexOf('@') + 1);
+            }
 
             return machineName;
         }
@@ -214,15 +220,20 @@ namespace MiniBus
             string queueName = queue;
 
             if (queue.Contains("@"))
+            {
                 queueName = queue.Substring(0, queue.IndexOf('@'));
+            }
 
             return queueName;
         }
 
         static string FormatPathToQueue(string machineName, string queueName)
         {
-            if (machineName == ".") // local
+            // local
+            if (machineName == ".")
+            {
                 return string.Format(@".\private$\{0}", queueName);
+            }
 
             // remote
             bool isIpAddress = Regex.Match(machineName, ipaddress).Success;
@@ -235,7 +246,7 @@ namespace MiniBus
             // we'll create local queues if required and they don't already exist
             if (machineName == "." && _config.AutoCreateLocalQueues)
             {                
-                if (MessageQueue.Exists(path)) return;
+                if (MessageQueue.Exists(path)){ return;}
 
                 // create and set permissions
                 using (var queue = MessageQueue.Create(path, true))
@@ -250,7 +261,9 @@ namespace MiniBus
         void ValidateQueue(string machineName, string queueName, string path)
         {
             if (!QueueExists(machineName, queueName, path))
+            {
                 throw new QueueNotFoundException(string.Format("{0} doesn't exist {1}. Did you type it correctly?", queueName, machineName == "." ? "locally" : "on " + machineName));
+            }
         }
 
         void CreateReadQueueFromPath(string path)
@@ -266,9 +279,13 @@ namespace MiniBus
         void CreateQueueToPutErrorsOn(string machineName, string queueName, string path)
         {
             if (QueueExists(machineName, queueName, path))
+            {
                 _errorQueue = new MiniBusMessageQueue(new MessageQueue(path), _logger, _config.AutoPurgeSystemJournal);
+            }
             else
+            {
                 throw new QueueNotFoundException(queueName + " doesn't exist. Did you type it correctly?");
+            }
         }
 
         static bool QueueExists(string machineName, string queueName, string path)
@@ -276,10 +293,14 @@ namespace MiniBus
             bool isIpAddress = Regex.Match(machineName, ipaddress).Success;
 
             if (isIpAddress)
+            {
                 return true; // assume valid as no means of retrieving queues when using ipaddress
+            }
 
             if (machineName == ".")
+            {
                 return MessageQueue.Exists(path);
+            }
 
             // MessageQueue.Exists doesn't work for remote machines
             var results = MessageQueue.GetPrivateQueuesByMachine(machineName);
