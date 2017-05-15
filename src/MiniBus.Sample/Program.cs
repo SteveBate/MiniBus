@@ -97,6 +97,7 @@ namespace MiniBus.Sample
                 .CreateLocalQueuesAutomatically()
                 .EnlistInAmbientTransactions()
                 .JsonSerialization()
+                .TimeToBeReceived(TimeSpan.FromMinutes(5))
                 .CreateBus();
 
             
@@ -133,6 +134,7 @@ namespace MiniBus.Sample
                 .CreateLocalQueuesAutomatically()
                 .AutoDistributeOnSend()
                 .JsonSerialization()
+                .TimeToBeReceived(TimeSpan.FromMinutes(5))
                 .CreateBus();
 
             var p = new Person { Name = "Bob", Age = 20 };

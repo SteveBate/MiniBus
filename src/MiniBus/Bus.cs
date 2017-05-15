@@ -175,7 +175,7 @@ namespace MiniBus
             }
             catch (Exception ex)
             {
-                throw new BusException($"A problem occurred copying message: {messageId} - error: {ex}");
+                throw new BusException(string.Format("A problem occurred copying message: {0} - error: {1}", messageId, ex));
             }
         }
 
@@ -220,6 +220,7 @@ namespace MiniBus
                 Body = dto,
                 AcknowledgeType = AcknowledgeTypes.FullReachQueue | AcknowledgeTypes.FullReceive,
                 UseJournalQueue = true,
+                TimeToBeReceived = _config.TimeToBeReceived == TimeSpan.Zero ? MessageQueue.InfiniteTimeout : _config.TimeToBeReceived,
                 Formatter = _config.JsonSerialization ? (IMessageFormatter)new JsonFormatter<T>() : new XmlMessageFormatter(new[] { typeof(T) }),
                 Label = Guid.NewGuid().ToString(),
             };

@@ -18,5 +18,6 @@ namespace MiniBus.Contracts
         bool FailFast { get; set; }
         bool DiscardFailures { get; set; }
         bool AutoPurgeSystemJournal { get; set; }
+        TimeSpan TimeToBeReceived { get; set; }
     }
 }

@@ -19,5 +19,6 @@ namespace MiniBus.Tests.Fakes
         public bool FailFast { get; set; }
         public bool DiscardFailures { get; set; }
         public bool AutoPurgeSystemJournal { get; set; }
+        public TimeSpan TimeToBeReceived { get; set; }
     }
 }

@@ -84,6 +84,12 @@ namespace MiniBus
             return this;
         }
 
+        public BusBuilder TimeToBeReceived(TimeSpan span)
+        {
+            _config.TimeToBeReceived = span;
+            return this;
+        }
+
         public BusBuilder AutoDistributeOnSend()
         {
             _config.AutoDistributeOnSend = true;
