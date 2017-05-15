@@ -213,16 +213,19 @@ namespace MiniBus
 
         Message CreateMsmqMessageFromDto<T>(T dto)
         {
-            return new Message
+            var message = dto as Message;
+            if (message == null)
             {
-                UseAuthentication = false,
-                Recoverable = true,
-                Body = dto,
-                AcknowledgeType = AcknowledgeTypes.FullReachQueue | AcknowledgeTypes.FullReceive,
-                UseJournalQueue = true,
-                Formatter = _config.JsonSerialization ? (IMessageFormatter)new JsonFormatter<T>() : new XmlMessageFormatter(new[] { typeof(T) }),
-                Label = Guid.NewGuid().ToString(),
-            };
+                message = new Message(dto);
+            }
+
+            message.UseAuthentication = false;
+            message.Recoverable = true;
+            message.AcknowledgeType = AcknowledgeTypes.FullReachQueue | AcknowledgeTypes.FullReceive;
+            message.UseJournalQueue = true;
+            message.Formatter = _config.JsonSerialization ? (IMessageFormatter) new JsonFormatter<T>() : new XmlMessageFormatter(new[] {typeof(T)});
+            message.Label = Guid.NewGuid().ToString();
+            return message;
         }
         
         ~Bus()
