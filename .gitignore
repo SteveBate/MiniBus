@@ -34,6 +34,7 @@ TestResults
 *.log
 *.vspscc
 *.vssscc
+.vs
 .builds
 
 # Visual C++ cache files
