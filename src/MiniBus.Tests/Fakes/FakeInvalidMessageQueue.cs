@@ -7,44 +7,22 @@ namespace MiniBus.Tests.Fakes
 {
     public sealed class FakeInvalidMessageQueue : IMessageQueue
     {
-        public string FormatName
-        {
-            get { return "FakeInvalidMessageQueue"; }
-        }
+        public string FormatName => "FakeInvalidMessageQueue";
 
-        public void Send(Message messgae, string label, System.Messaging.MessageQueueTransactionType transactionType)
-        {
-        }
+        public void Send(Message messgae, string label, MessageQueueTransactionType transactionType) {}
 
-        public void ReceiveById(string messageId, System.Messaging.MessageQueueTransactionType transactionType)
-        {
-        }
+        public void ReceiveById(string messageId, MessageQueueTransactionType transactionType) {}
 
-        public void ReceiveAsync(Action<Message> current)
-        {
-        }
+        public void ReceiveAsync(Action<Message> current) {}
 
-        public void StopReceiveAsync()
-        {
-        }
+        public void StopReceiveAsync() {}
 
-        public IEnumerable<Message> GetAllMessages()
-        {
-            return null;
-        }
+        public IEnumerable<Message> PeekAllMessages() => null;
 
-        public Message GetMessageBy(string id)
-        {
-            return null;
-        }
+        public Message PeekMessageBy(string id) => null;
 
-        public bool IsInitialized
-        {
-            get { return false; }
-        }
+        public bool IsInitialized => false;
 
-        public void Dispose()
-        {
-        }        
+        public void Dispose() {}
     }
 }

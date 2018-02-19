@@ -1,5 +1,4 @@
-﻿using MiniBus.Contracts;
-using MiniBus.Tests.Fakes;
+﻿using MiniBus.Tests.Fakes;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -23,16 +22,16 @@ namespace MiniBus.Tests
 
         protected List<Delegate> ThreeHandlers;
 
-        internal FakeValidMessageQueue QueueWithOneMessage()
+        internal FakeValidMessageQueue QueueWithOneMessage(string queueName)
         {
-            var queue = new FakeValidMessageQueue();
+            var queue = new FakeValidMessageQueue(queueName);
             queue.Add(new Message { Body = new FakeDto(), Label = "00000-00000-00000-00000\0000" });
             return queue;
         }
 
-        internal FakeValidMessageQueue QueueWithTwoMessages()
+        internal FakeValidMessageQueue QueueWithTwoMessages(string queueName)
         {
-            var queue = new FakeValidMessageQueue();
+            var queue = new FakeValidMessageQueue(queueName);
             queue.Add(new Message { Body = new FakeDto(), Label = "00000-00000-00000-00000\0000" });
             queue.Add(new Message { Body = new FakeDto(), Label = "00000-00000-00000-00000\0001" });
             return queue;

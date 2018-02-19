@@ -5,21 +5,12 @@ namespace MiniBus.Tests.Fakes
 {
     internal sealed class FakeLogger : ILogMessages
     {
-        public FakeLogger()
-        {
-            _logged = new List<string>();
-        }
+        public FakeLogger() => _logged = new List<string>();
 
-        public string this[int index] 
-        {
-            get { return _logged[index]; }
-        }
+        public string this[int index] => _logged[index];
 
-        public void Log(string message)
-        {
-            _logged.Add(message);
-        }
+        public void Log(string message) => _logged.Add(message);
 
-        private List<string> _logged;
+        private readonly List<string> _logged;
     }
 }

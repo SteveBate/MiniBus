@@ -7,82 +7,86 @@ namespace MiniBus.Sample
 {
     class Program
     {
-        static bool stopped = true;
         static IBus _bus;
 
-        static void Main(string[] args)
+        static void Main()
         {
-            Console.WriteLine("Choose an option to execute:");
-            Console.WriteLine("1  - Send message to queue");
-            Console.WriteLine("2  - Send message to queues in distributed manner");
-            Console.WriteLine("3  - Read message from queue");
-            Console.WriteLine("4  - Read message from queue async");
-            Console.WriteLine("5  - Fail to error queue");
-            Console.WriteLine("6  - Fail to error queue async");
-            Console.WriteLine("7  - Fail fast");
-            Console.WriteLine("8  - Fail fast async");
-            Console.WriteLine("9  - Return error messages to read queue");
-            Console.WriteLine("A  - Fail and discard");
-            Console.WriteLine("B  - Test multiple handlers");
-            Console.WriteLine("X  - exit");
+            bool exit = false;
 
-            var selection = Console.ReadKey();
-
-            switch(selection.Key)
+            do
             {
-                case ConsoleKey.D1:
-                    SendDemo();
-                    break;
+                Console.Clear();
+                Console.WriteLine("Choose an option to execute:");
+                Console.WriteLine("1  - Send message to queue");
+                Console.WriteLine("2  - Send message to queues in distributed manner");
+                Console.WriteLine("3  - Read message from queue");
+                Console.WriteLine("4  - Read message from queue async");
+                Console.WriteLine("5  - Fail to error queue");
+                Console.WriteLine("6  - Fail to error queue async");
+                Console.WriteLine("7  - Fail fast");
+                Console.WriteLine("8  - Fail fast async");
+                Console.WriteLine("9  - Return error messages to read queue");
+                Console.WriteLine("A  - Fail and discard");
+                Console.WriteLine("B  - Test multiple handlers");
+                Console.WriteLine("X  - exit");
 
-                case ConsoleKey.D2:
-                    SendAutoDistributeDemo();
-                    break;
+                var selection = Console.ReadKey();
 
-                case ConsoleKey.D3:
-                    ReceiveDemo();
-                    break;
+                switch (selection.Key)
+                {
+                    case ConsoleKey.D1:
+                        SendDemo();
+                        break;
 
-                case ConsoleKey.D4:
-                    ReceiveDemoAsync();
-                    break;
+                    case ConsoleKey.D2:
+                        SendAutoDistributeDemo();
+                        break;
 
-                case ConsoleKey.D5:
-                    FailToErrorQueueDemo();
-                    break;
+                    case ConsoleKey.D3:
+                        ReceiveDemo();
+                        break;
 
-                case ConsoleKey.D6:
-                    FailToErrorQueueAsync();
-                    break;
+                    case ConsoleKey.D4:
+                        ReceiveDemoAsync();
+                        break;
 
-                case ConsoleKey.D7:
-                    FailFastDemo();
-                    break;
+                    case ConsoleKey.D5:
+                        FailToErrorQueueDemo();
+                        break;
 
-                case ConsoleKey.D8:
-                    FailFastDemoAsync();
-                    break;
+                    case ConsoleKey.D6:
+                        FailToErrorQueueAsync();
+                        break;
 
-                case ConsoleKey.D9:
-                    ReturnErrorMessagesDemo();
-                    break;
-                    
-                case ConsoleKey.A:
-                    FailAndDiscardDemo();
-                    break;
+                    case ConsoleKey.D7:
+                        FailFastDemo();
+                        break;
 
-                case ConsoleKey.B:
-                    ReceiveMultiplesDemo();
-                    break;
+                    case ConsoleKey.D8:
+                        FailFastDemoAsync();
+                        break;
 
-                case ConsoleKey.X:                    
-                    break;
+                    case ConsoleKey.D9:
+                        ReturnErrorMessagesDemo();
+                        break;
 
-                default:
-                    Console.WriteLine("invalid option");
-                    break;
-            }
-                        
-            Console.ReadLine();
+                    case ConsoleKey.A:
+                        FailAndDiscardDemo();
+                        break;
+
+                    case ConsoleKey.B:
+                        ReceiveMultiplesDemo();
+                        break;
+
+                    case ConsoleKey.X:
+                        exit = true;
+                        break;
+
+                    default:
+                        Console.WriteLine("invalid option");
+                        break;
+                }
+            } while (!exit);
         }
 
         static void SendDemo()
@@ -91,7 +95,6 @@ namespace MiniBus.Sample
 
             _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineWriteQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
@@ -114,8 +117,8 @@ namespace MiniBus.Sample
                 }
                 scope.Complete();
             }
-            
-            Console.WriteLine("\nPress a key to exit");
+
+            Console.WriteLine("\nMessages sent - press Enter to choose new option");
             Console.ReadLine();
             _bus.Dispose();
         }
@@ -127,23 +130,21 @@ namespace MiniBus.Sample
 
             _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
-                .DefineWriteQueue("MiniBus.messages1")
-                .DefineWriteQueues("MiniBus.messages2", "MiniBus.messages3")
+                .DefineWriteQueues("MiniBus.messages1", "MiniBus.messages2", "MiniBus.messages3")
                 .CreateLocalQueuesAutomatically()
                 .AutoDistributeOnSend()
                 .JsonSerialization()
                 .TimeToBeReceived(TimeSpan.FromMinutes(5))
                 .CreateBus();
 
-            var p = new Person { Name = "Bob", Age = 20 };
-            _bus.Send(p); // MiniBus.messages1
-            _bus.Send(p); // MiniBus.messages2
-            _bus.Send(p); // MiniBus.messages3
-            _bus.Send(p); // MiniBus.messages1
-            
-            Console.WriteLine("\nPress a key to exit");
+            for (int i = 0; i < 4; i++)
+            {
+                var p = new Person { Name = "Bob", Age = 20};
+                _bus.Send(p);
+            }
+
+            Console.WriteLine("\nMessages sent - press Enter to choose new option");
             Console.ReadLine();
             _bus.Dispose();
         }
@@ -152,12 +153,11 @@ namespace MiniBus.Sample
         {
             // demonstrate receiving - Receive processes whatever messages happen to be on the queue at the time of the call
 
-            Console.WriteLine("\nPress a key to read message/s");
+            Console.WriteLine("\nPress enter to read message/s");
             Console.ReadLine();
 
             _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
@@ -168,10 +168,10 @@ namespace MiniBus.Sample
 
             // pass true to have a message fail and moved to the error queue
             _bus.RegisterHandler(new PersonHandler(false));
-            
+
             _bus.Receive<Person>();
 
-            Console.WriteLine("\nPress a key to exit");
+            Console.WriteLine("\nMessages read - Press Enter to choose new option");
             Console.ReadLine(); 
             _bus.Dispose();
         }
@@ -183,7 +183,6 @@ namespace MiniBus.Sample
 
             _bus = new BusBuilder()
                 .WithLogging(new ConsoleLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
@@ -192,37 +191,27 @@ namespace MiniBus.Sample
                 .NumberOfRetries(3)
                 .CreateBus();
 
+            Console.WriteLine("\nListening...");
+
             // pass true to have a message fail and moved to the error queue
             _bus.RegisterHandler(new PersonHandler(false));
+            _bus.ReceiveAsync<Person>();
 
-            Console.WriteLine("\nPress S to start/stop listening to messages or any other key to exit");
-            while(Console.ReadKey().Key == ConsoleKey.S)
-            {
-                if (stopped)
-                {
-                    _bus.ReceiveAsync<Person>();
-                }
-                else
-                {
-                    _bus.StopReceiving();
-                }
-
-                stopped = !stopped;
-            }
-
+            Console.WriteLine("\nPress Enter to choose new option");
+            Console.ReadLine();
+            _bus.StopReceiving();
             _bus.Dispose();
         }
 
         static void FailToErrorQueueDemo()
         {
-            // demonstrate receiving - Receive processes whatever messages happen to be on the queue at the time of the call
+            // demonstrate error whilst receiving - PersonHandler will throw exception moving the message to the error queue
 
             Console.WriteLine("\nPress a key to read message/s");
             Console.ReadLine();
 
             _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
@@ -236,19 +225,18 @@ namespace MiniBus.Sample
 
             _bus.Receive<Person>();
 
-            Console.WriteLine("\nPress a key to exit");
+            Console.WriteLine("\nPress Enter to choose new option");
             Console.ReadLine();
             _bus.Dispose();
         }
 
         static void FailToErrorQueueAsync()
         {
-            // demonstrate receiving asynchronously - ReceiveAsync processes messages as and when they arrive. 
+            // demonstrate error whilst receiving asynchronously - PersonHandler will throw exception moving the message to the error queue
             // Open another instance to send messages while the other receives.
 
             _bus = new BusBuilder()
                 .WithLogging(new ConsoleLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
@@ -257,25 +245,27 @@ namespace MiniBus.Sample
                 .NumberOfRetries(3)
                 .CreateBus();
 
+            Console.WriteLine("\nListening...");
+
             // pass true to have a message fail and moved to the error queue
             _bus.RegisterHandler(new PersonHandler(true));
             _bus.ReceiveAsync<Person>();
 
-            Console.WriteLine("\nPress a key to exit");
+            Console.WriteLine("\nPress Enter to choose new option");
             Console.ReadLine();
+            _bus.StopReceiving();
             _bus.Dispose();
         }
 
         static void FailFastDemo()
         {
-            // demonstrate receiving - Receive processes whatever messages happen to be on the queue at the time of the call
+            // demonstrate fail fast option - PersonHandler throws exception but FailFast setting causes queue processing to stop leaving the message at the tip of the queue
 
             Console.WriteLine("\nPress a key to read message/s");
             Console.ReadLine();
 
             _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
@@ -290,19 +280,18 @@ namespace MiniBus.Sample
 
             _bus.Receive<Person>();
 
-            Console.WriteLine("\nPress a key to exit");
+            Console.WriteLine("\nPress Enter to choose new option");
             Console.ReadLine();
             _bus.Dispose();
         }
 
         static void FailFastDemoAsync()
         {
-            // demonstrate receiving asynchrnously - ReceiveAsync processes messages as and when they arrive. 
+            // demonstrate fail fast option whilst receiving asynchronously - PersonHandler throws exception but FailFast setting causes queue processing to stop leaving the message at the tip of the queue
             // Open another instance to send messages while the other receives.
 
             _bus = new BusBuilder()
                 .WithLogging(new ConsoleLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
@@ -316,7 +305,7 @@ namespace MiniBus.Sample
             _bus.RegisterHandler(new PersonHandler(true));
             _bus.ReceiveAsync<Person>();
 
-            Console.WriteLine("\nPress a key to exit");
+            Console.WriteLine("\nPress Enter to choose new option");
             Console.ReadLine();
             _bus.Dispose();
         }
@@ -332,7 +321,7 @@ namespace MiniBus.Sample
                 .CreateLocalQueuesAutomatically()
                 .CreateBus();
 
-            Console.WriteLine("Enter the id of the message to be returned or type 'all' for all messages");
+            Console.WriteLine("\nEnter the id of the message to be returned or type 'all' for all messages");
             string messageid = Console.ReadLine();
 
             try
@@ -351,21 +340,20 @@ namespace MiniBus.Sample
                 Console.WriteLine("Couldn't return error messages to the read queue: {0}", ex.Message);
             }
 
-            Console.WriteLine("\nPress a key to exit");
+            Console.WriteLine("\nPress Enter to choose new option");
             Console.ReadLine();
             _bus.Dispose();
         }
 
         static void FailAndDiscardDemo()
         {
-            // demonstrate receiving - Receive processes whatever messages happen to be on the queue at the time of the call
+            // demonstrate DiscardFailedMessages option - PersonHandler throws exception but message is thrown away
 
             Console.WriteLine("\nPress a key to read message/s");
             Console.ReadLine();
 
             _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.messages1")
                 .CreateLocalQueuesAutomatically()
@@ -375,12 +363,11 @@ namespace MiniBus.Sample
                 .DiscardFailedMessages()
                 .CreateBus();
 
-            // pass true to have a message fail fast by stopping all message processing. Messages are left on the read queue
             _bus.RegisterHandler(new PersonHandler(true));
 
             _bus.Receive<Person>();
 
-            Console.WriteLine("\nPress a key to exit");
+            Console.WriteLine("\nPress Enter to choose new option");
             Console.ReadLine();
             _bus.Dispose();
         }
@@ -394,7 +381,6 @@ namespace MiniBus.Sample
 
             _bus = new BusBuilder()
                 .WithLogging(new FileLogger())
-                .InstallMsmqIfNeeded()
                 .DefineErrorQueue("MiniBus.errors")
                 .DefineReadQueue("MiniBus.basicmessages")
                 .DefineWriteQueue("MiniBus.basicmessages")
@@ -417,7 +403,7 @@ namespace MiniBus.Sample
             _bus.Send(18);
             _bus.Send(5);
 
-            Console.WriteLine("\nPress a key to exit");
+            Console.WriteLine("\nPress Enter to choose new option");
             Console.ReadLine();
             _bus.Dispose();
         }
@@ -427,10 +413,9 @@ namespace MiniBus.Sample
     {
         public string Name { get; set; }
         public int Age { get; set; }
-
         public override string ToString()
         {
-            return string.Format("Name: {0}, Age: {1}", Name, Age);
+            return $"Name: {Name}, Age: {Age}";
         }
     }
 
@@ -446,11 +431,11 @@ namespace MiniBus.Sample
     {
         public void Log(string message)
         {
-            if(log.IsDebugEnabled)
-                log.Debug(message);
+            if(Logger.IsDebugEnabled)
+                Logger.Debug(message);
         }
 
-        static readonly ILog log = LogManager.GetLogger(typeof(Program));
+        private static readonly ILog Logger = LogManager.GetLogger(typeof(Program));
     }
 
     class PersonHandler : IHandleMessage<Person>
@@ -470,7 +455,7 @@ namespace MiniBus.Sample
             Console.WriteLine("Recevied person: {0} aged: {1}", p.Name, p.Age);
         }
 
-        bool _throwException;
+        readonly bool _throwException;
     }
     
     class NumberHandler : IHandleMessage<int>

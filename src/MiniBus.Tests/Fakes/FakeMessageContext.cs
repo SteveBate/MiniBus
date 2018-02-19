@@ -2,36 +2,18 @@
 
 namespace MiniBus.Tests.Fakes
 {
-    internal class FakeMessageContext : IReadMessageContext, IWriteMessageContext
+    internal class FakeMessageContext
     {
-        public string ErrorQueueName
-        {
-            get { return "TestErrorQueue"; }
-        }
+        public string ErrorQueueName => "TestErrorQueue";
 
-        public string ReadQueueName
-        {
-            get { return "TestReadQueue"; }
-        }
+        public string ReadQueueName => "TestReadQueue";
 
-        public string WriteQueueName
-        {
-            get { return "TestWriteQueue"; }
-        }
+        public string WriteQueueName => "TestWriteQueue";
 
-        public IMessageQueue ErrorQueue
-        {
-            get { return new FakeValidMessageQueue(); }
-        }
+        public IMessageQueue ErrorQueue => new FakeValidMessageQueue("errorQueue");
 
-        public IMessageQueue ReadQueue
-        {
-            get { return new FakeValidMessageQueue(); }
-        }
+        public IMessageQueue ReadQueue => new FakeValidMessageQueue("readQueue");
 
-        public IMessageQueue WriteQueue
-        {
-            get { return new FakeValidMessageQueue(); }
-        }
+        public IMessageQueue WriteQueue => new FakeValidMessageQueue("writeQueue1");
     }
 }

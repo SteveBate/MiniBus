@@ -8,20 +8,13 @@ namespace MiniBus.Tests.Fakes
 {
     public sealed class FakeValidMessageQueue : IMessageQueue
     {
-        public void Add(Message message)
-        {
-            _messages.Add(message);
-        }
+        public FakeValidMessageQueue(string queueName) => FormatName = queueName;
 
-        public string FormatName
-        {
-            get { return "FakeValidMessageQueue"; }
-        }
+        public void Add(Message message) => _messages.Add(message);
 
-        public void Send(Message message, string label, MessageQueueTransactionType transactionType)
-        {
-            _messages.Add(message);
-        }
+        public string FormatName { get; }
+
+        public void Send(Message message, string label, MessageQueueTransactionType transactionType) => _messages.Add(message);
 
         public void ReceiveById(string messageId, MessageQueueTransactionType transactionType)
         {
@@ -29,40 +22,25 @@ namespace MiniBus.Tests.Fakes
             _messages.Remove(msg);
         }
 
-        public void ReceiveAsync(Action<Message> current)
-        {
-        }
+        public void ReceiveAsync(Action<Message> current) {}
 
-        public void StopReceiveAsync()
-        {
-        }
+        public void StopReceiveAsync() {}
 
-        public IEnumerable<Message> GetAllMessages()
+        public IEnumerable<Message> PeekAllMessages()
         {
             var newList = new List<Message>();
             _messages.ForEach(m => newList.Add(m));
             return newList;
         }
 
-        public Message GetMessageBy(string id)
-        {
-            return _messages.SingleOrDefault(m => m.Label == id);
-        }
+        public Message PeekMessageBy(string id) => _messages.SingleOrDefault(m => m.Label == id);
 
-        public bool IsInitialized
-        {
-            get { return true; }
-        }
+        public bool IsInitialized => true;
 
-        public int Count 
-        {
-            get { return _messages.Count; }
-        }
+        public int Count => _messages.Count;
 
-        private readonly List<Message> _messages = new List<Message>();
+        public void Dispose() {}
 
-        public void Dispose()
-        {
-        }
+        readonly List<Message> _messages = new List<Message>();
     }
 }
