@@ -1,37 +1,31 @@
-﻿using MiniBus.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Messaging;
-using System.Text;
+﻿using MiniBus.Core;
 
 namespace MiniBus.Aspects
 {
-    internal class FailFastAspect : IHandleMessage<Message>
+    /// <summary>
+    /// FailFastAspect stops processing of the queues - sometimes preserving message processing order is critical
+    /// </summary>
+    internal class FailFastAspect<T> : IAspect<T>, IFilter<T> where T : MessageContext
     {
-        public FailFastAspect(IHandleMessage<Message> action, IBusConfig config, ILogMessages logger)
-        {
-            _inner = action;
-            _config = config;
-            _logger = logger;
-        }
-
-        public void Handle(Message msg)
+        public void Execute(T ctx)
         {
             try
             {
-                _inner.Handle(msg);
+                Next.Execute(ctx);
             }
-            catch (Exception)
+            catch
             {
-                Failed = _config.FailFast;
+                if (!ctx.Handled)
+                {
+                    ctx.FailFast = ctx.Config.FailFast;
+                    if (ctx.FailFast)
+                    {
+                        ctx.OnStep($"Message: {ctx.Message.Label} - FailFast option enabled - Queue processing halted");
+                    }
+                }
             }
         }
 
-        public bool Failed { get; private set; }
-
-        readonly ILogMessages _logger;
-        readonly IBusConfig _config;
-        readonly IHandleMessage<Message> _inner; 
+        public IAspect<T> Next { get; set; }
     }
 }

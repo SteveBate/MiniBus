@@ -1,45 +1,65 @@
 ﻿using System;
-using System.Messaging;
-using MiniBus.Contracts;
+using System.Threading;
+using System.Transactions;
+using MiniBus.Core;
 
 namespace MiniBus.Aspects
 {
-    internal class RetryAspect : IHandleMessage<Message>
+    /// <summary>
+    /// RetryAspect - In the event of an error try to process the message again up to the configured number of retries
+    /// </summary>
+    internal class RetryAspect<T> : IAspect<T>, IFilter<T> where T : MessageContext
     {
-        public RetryAspect(IHandleMessage<Message> action, IBusConfig config, ILogMessages logger)
-        {
-            _inner = action;
-            _config = config;            
-            _logger = logger;
-        }
-
-        public void Handle(Message msg)
+        public void Execute(T ctx)
         {
             try
             {
-                _inner.Handle(msg);
+                Next.Execute(ctx);
+                ctx.Handled = true;
+                _retry = 0;
             }
-            catch(Exception)
+            catch (Exception e)
             {
+                ctx.OnStep($"TRANSACTION STATUS: {Transaction.Current.TransactionInformation.Status} - REASON: {e.Message}");
+ 
+                // once an exception occurs the current transaction is damaged goods
+                Transaction.Current.Rollback();
+
                 _retry++;
-                
-                if (_retry <= _config.MaxRetries)
+
+                if (_retry <= ctx.Config.MaxRetries)
                 {
-                    _logger.Log(string.Format("Message: {0} - Retry attempt {1}", msg.Label, _retry));
-                    Handle(msg);
+                    if (ctx.Config.SlidingRetryInterval > 0)
+                    {
+                        // wait for a time specified by SlidingRetryInterval before retrying. Default value is 1 second
+                        double wait = _retry * (ctx.Config.SlidingRetryInterval / 1000.00);
+                        ctx.OnStep($"Message: {ctx.Message.Label} - Waiting {wait} seconds before attempt {_retry}");
+                        Thread.Sleep(ctx.Config.SlidingRetryInterval * _retry);
+                    }
+
+                    ctx.OnStep($"Message: {ctx.Message.Label} - Retry attempt {_retry}");
+
+                    // defaults for TransactionScope are Serializable and 1 minute neither of which are ideal for SQL Server
+                    var options = new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted, Timeout = TransactionManager.MaximumTimeout };
+                    
+                    // retry in the context of a new transaction
+                    using (var scope = new TransactionScope(TransactionScopeOption.RequiresNew, options))
+                    {
+                        Execute(ctx);
+                        scope.Complete();
+                        ctx.OnStep($"Message: {ctx.Message.Label} - Retry successful");
+                    }
                 }
                 else
                 {
-                    _logger.Log(string.Format("Message: {0} - Invocation failed", msg.Label));
+                    ctx.OnStep($"Message: {ctx.Message.Label} - Invocation failed");
                     throw;
                 }
             }
         }
-        
-        readonly ILogMessages _logger;
-        readonly IBusConfig _config;
-        readonly IHandleMessage<Message> _inner; 
+
+        public IAspect<T> Next { get; set; }
+
         int _retry;
     }
-
 }

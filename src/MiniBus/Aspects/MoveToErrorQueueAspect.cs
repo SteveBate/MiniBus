@@ -1,45 +1,31 @@
 ﻿using System;
 using System.Messaging;
-using MiniBus.Contracts;
 using System.Threading;
+using MiniBus.Core;
 
 namespace MiniBus.Aspects
 {
-    internal class MoveToErrorQueueAspect : IHandleMessage<Message>
+    internal class MoveToErrorQueueAspect<T> : IAspect<T>, IFilter<T> where T : MessageContext
     {
-        public MoveToErrorQueueAspect(IHandleMessage<Message> action, IReadMessageContext context, IBusConfig config, ILogMessages logger)
-        {
-            _context = context;
-            _config = config;
-            _logger = logger;
-            _inner = action;
-        }
-
-        public void Handle(Message msg)
+        public void Execute(T ctx)
         {
             try
             {
-                _inner.Handle(msg);
+                Next.Execute(ctx);
             }
             catch (Exception ex)
             {
-                if (!_config.FailFast && !_config.DiscardFailures)
+                if (!ctx.Config.FailFast && !ctx.Config.DiscardFailures && !ctx.Handled)
                 {
-                    _logger.Log(string.Format("Message: {0} - Moving to error queue: {1}", msg.Label, _context.ErrorQueueName));
-                    _context.ErrorQueue.Send(msg, msg.Label, MessageQueueTransactionType.Single);
-                    if (_config.ErrorActions != null)
-                    {
-                        _config.ErrorActions.ForEach(a => ThreadPool.QueueUserWorkItem(cb => a(ex.Message)));
-                    }
+                    ctx.OnStep($"Message: {ctx.Message.Label} - Moving to error queue: {ctx.ErrorQueue.FormatName}");
+                    ctx.ErrorQueue.Send(ctx.Message, ctx.Message.Label, MessageQueueTransactionType.Single);
+                    ctx.Config.ErrorActions?.ForEach(a => ThreadPool.QueueUserWorkItem(cb => a(ex.Message)));
                 }
 
                 throw;
             }
         }
 
-        readonly IReadMessageContext _context;
-        readonly IBusConfig _config;
-        readonly ILogMessages _logger;
-        readonly IHandleMessage<Message> _inner;
+        public IAspect<T> Next { get; set; }
     }
 }

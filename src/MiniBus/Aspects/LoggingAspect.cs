@@ -1,39 +1,32 @@
 ﻿using System;
-using System.Messaging;
-using MiniBus.Contracts;
+using MiniBus.Core;
 
 namespace MiniBus.Aspects
 {
-    internal class LoggingAspect : IHandleMessage<Message>
+    internal class LoggingAspect<T> : IAspect<T>, IFilter<T> where T : MessageContext
     {
-        public LoggingAspect(IHandleMessage<Message> action, string operation, ILogMessages logger)
+        public void Execute(T ctx)
         {
-            _inner = action;
-            _logger = logger;
-            _operation = operation;
-        }
-
-        public void Handle(Message msg)
-        {
-            _logger.Log(string.Format("Message: {0} - Started {1} Operation", msg.Label, _operation));
+            ctx.OnStep($"Message: {ctx.Message.Label} - Started {ctx.OpType} Operation");
             try
             {
-                _inner.Handle(msg);
+                Next.Execute(ctx);
             }
             catch (Exception ex)
             {
-                _logger.Log(string.Format("Message: {0} - EXCEPTION {1}", msg.Label, ex.Message));
-                _logger.Log(string.Format("Message: {0} - {1}", msg.Label, ex));
-                throw;
+                if (!ctx.Handled)
+                {
+                    ctx.OnStep($"Message: {ctx.Message.Label} - EXCEPTION - {ex.Message}");
+                    ctx.OnStep($"Message: {ctx.Message.Label} - {ex}");
+                    throw;
+                }
             }
             finally
             {
-                _logger.Log(string.Format("Message: {0} - Completed {1} Operation", msg.Label, _operation));
+                ctx.OnStep($"Message: {ctx.Message.Label} - Completed {ctx.OpType} Operation");
             }
         }
 
-        readonly IHandleMessage<Message> _inner;
-        readonly ILogMessages _logger;        
-        readonly string _operation;
+        public IAspect<T> Next { get; set; }
     }
 }

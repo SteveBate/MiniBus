@@ -14,26 +14,22 @@ namespace MiniBus.MessageQueues
             _autoPurgeSystemJournal = autoPurgeSystemJournal;
         }
         
-        public string FormatName
-        {
-            get { return _queue.FormatName; }
-        }
-        
+        public string FormatName => _queue.FormatName;
+
+        public bool IsInitialized => _queue != null;
+
         public void Send(Message message, string label, MessageQueueTransactionType transactionType)
         {
             _queue.Send(message, label, transactionType);
 
-            if (_autoPurgeSystemJournal && (_lastPurgedOn == DateTime.MinValue || _lastPurgedOn.AddMinutes(purgeIntervalInMinutes) < DateTime.Now))
+            if (_autoPurgeSystemJournal && (_lastPurgedOn == DateTime.MinValue || _lastPurgedOn.AddMinutes(PurgeIntervalInMinutes) < DateTime.Now))
             {
-                systemJournalQueue.Purge();
+                _systemJournalQueue.Purge();
                 _lastPurgedOn = DateTime.Now;
             }
         }
 
-        public void ReceiveById(string messageId, MessageQueueTransactionType transactionType)
-        {
-            _queue.ReceiveById(messageId, transactionType);
-        }
+        public void ReceiveById(string messageId, MessageQueueTransactionType transactionType) => _queue.ReceiveById(messageId, transactionType);
 
         public void ReceiveAsync(Action<Message> current)
         {
@@ -48,22 +44,32 @@ namespace MiniBus.MessageQueues
                     {
                         current(m);
                     }
-                    queue.BeginPeek();
 
-                    if (_autoPurgeSystemJournal && (_lastPurgedOn == DateTime.MinValue || _lastPurgedOn.AddMinutes(purgeIntervalInMinutes) < DateTime.Now))
+                    // In the event of environmental issues such as sql server timeouts or connection refused errors the process would sometimes stop consuming MSMQ messages
+                    // Recreating the MessageQueue object and re-attaching the PeekCompleted event handler fixes this. The operation is fast and cheap and most importantly, works.
+                    _queue.PeekCompleted -= _handler;
+                    _queue = new MessageQueue(queue.Path);
+                    _queue.PeekCompleted += _handler;
+                    _queue.BeginPeek();
+
+                    if (_autoPurgeSystemJournal && (_lastPurgedOn == DateTime.MinValue || _lastPurgedOn.AddMinutes(PurgeIntervalInMinutes) < DateTime.Now))
                     {
-                        systemJournalQueue.Purge();
+                        _systemJournalQueue.Purge();
                         _lastPurgedOn = DateTime.Now;
                     }
                 }
                 catch (MessageQueueException ex)
                 {
-                    _logger.Log(ex.Message);
+                    _logger.Log(ex.ToString());
+                    _logger.Log("Restarting ReceiveAsync...");
+                    _queue.BeginPeek();
+                    _logger.Log("Waiting for message after exception...");
                 }
             };
 
             _queue.PeekCompleted += _handler;
             _queue.BeginPeek();
+            _logger.Log("Waiting for message...");
         }
 
         public void StopReceiveAsync()
@@ -76,25 +82,14 @@ namespace MiniBus.MessageQueues
         /// throws System.Messaging.MessageQueueException
         /// </summary>
         /// <returns>An array of Msmq messages</returns>
-        public IEnumerable<Message> GetAllMessages()
-        {
-            return _queue.GetAllMessages();
-        }
+        public IEnumerable<Message> PeekAllMessages() => _queue.GetAllMessages();
 
         /// <summary>
         /// throws System.Messaging.MessageQueueException
         /// </summary>
         /// <param name="id">the identifier of the message to be moved</param>
         /// <returns>An Msmq message represented by the given id</returns>
-        public Message GetMessageBy(string id)
-        {
-            return _queue.PeekById(id);
-        }
-
-        public bool IsInitialized
-        {
-            get { return _queue != null; }
-        }
+        public Message PeekMessageBy(string id) => _queue.PeekById(id);
 
         public void Dispose()
         {
@@ -107,32 +102,27 @@ namespace MiniBus.MessageQueues
             Dispose(false);
         }
 
-        void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed) {return;}
 
             if (disposing)
             {
-                if (_queue != null)
-                {
-                    _queue.Dispose();
-                }
+                _queue?.Dispose();
+                _systemJournalQueue.Dispose();
             }
 
             _disposed = true;
         }
 
-        readonly MessageQueue _queue;
-        readonly ILogMessages _logger;
-        readonly bool _autoPurgeSystemJournal;
-        PeekCompletedEventHandler _handler;
-        bool _receiving;
-        bool _disposed;
-        DateTime _lastPurgedOn = DateTime.MinValue;
-        const int purgeIntervalInMinutes = 15;
-
-        MessageQueue systemJournalQueue = new MessageQueue("FormatName:Direct=os:.\\System$;JOURNAL");
-
-        
+        private readonly MessageQueue _systemJournalQueue = new MessageQueue("FormatName:Direct=os:.\\System$;JOURNAL");
+        private MessageQueue _queue;
+        private readonly ILogMessages _logger;
+        private readonly bool _autoPurgeSystemJournal;
+        private DateTime _lastPurgedOn = DateTime.MinValue;
+        private PeekCompletedEventHandler _handler;
+        private bool _receiving;
+        private bool _disposed;
+        private const int PurgeIntervalInMinutes = 15;
     }
 }

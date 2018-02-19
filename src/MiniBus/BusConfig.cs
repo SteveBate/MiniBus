@@ -13,11 +13,11 @@ namespace MiniBus
         }
 
         public int MaxRetries { get; set; }
+        public int SlidingRetryInterval { get; set; } = 1000; // milliseconds
         public string ReadQueue { get; set; }
         public string ErrorQueue { get; set; }
-        public List<string> WriteQueues { get; private set; }
+        public List<string> WriteQueues { get; }
         public bool AutoCreateLocalQueues { get; set; }
-        public bool InstallMsmq { get; set; }
         public bool EnlistInAmbientTransactions { get; set; }
         public bool JsonSerialization { get; set; }
         public bool AutoDistributeOnSend { get; set; }
@@ -26,5 +26,6 @@ namespace MiniBus
         public bool DiscardFailures { get; set; }
         public List<Action<string>> ErrorActions { get; set; }
         public bool AutoPurgeSystemJournal { get; set; }
+        public bool UseJournalQueue { get; set; }
     }
 }

@@ -1,39 +1,37 @@
 ﻿using System;
-using System.Messaging;
 using System.Transactions;
-using MiniBus.Contracts;
+using MiniBus.Core;
 
 namespace MiniBus.Aspects
 {
-    internal class TransactionAspect : IHandleMessage<Message>
+    internal class TransactionAspect<T> : IAspect<T>, IFilter<T> where T : MessageContext
     {
-        public TransactionAspect(IHandleMessage<Message> action, ILogMessages logger)
-        {            
-            _inner = action;
-            _logger = logger;
-        }
-
-        public void Handle(Message msg)
+        public void Execute(T ctx)
         {
-            _logger.Log(string.Format("Message: {0} - Transaction started", msg.Label));
+            ctx.OnStep($"Message: {ctx.Message.Label} - Transaction started");
 
-            using (var scope = new TransactionScope(TransactionScopeOption.Required, TransactionManager.DefaultTimeout))
+            // defaults for TransactionScope are Serializable and 1 minute neither of which are ideal for SQL Server
+            var options = new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted, Timeout = TransactionManager.MaximumTimeout };
+
+            using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
             {
                 try
                 {
-                    _inner.Handle(msg);
-                    _logger.Log(string.Format("Message: {0} - Transaction committed", msg.Label));
+                    Next.Execute(ctx);
+                    ctx.OnStep($"Message: {ctx.Message.Label} - Transaction committed" + Environment.NewLine);
                     scope.Complete();
                 }
                 catch (Exception)
                 {
-                    _logger.Log(string.Format("Message: {0} - Transaction rolled back", msg.Label));
-                    throw;
+                    if (!ctx.Handled)
+                    {
+                        ctx.OnStep($"Message: {ctx.Message.Label} - Transaction rolled back" + Environment.NewLine);
+                        throw;
+                    }
                 }
             }
         }
 
-        readonly ILogMessages _logger;
-        readonly IHandleMessage<Message> _inner;
+        public IAspect<T> Next { get; set; }
     }
 }

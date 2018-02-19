@@ -12,7 +12,7 @@ namespace MiniBus.Contracts
         void ReceiveById(string messageId, MessageQueueTransactionType transactionType);
         void ReceiveAsync(Action<Message> current);
         void StopReceiveAsync();
-        IEnumerable<Message> GetAllMessages();
-        Message GetMessageBy(string id);
+        IEnumerable<Message> PeekAllMessages();
+        Message PeekMessageBy(string id);
     }
 }

@@ -5,10 +5,9 @@ using System.Messaging;
 using MiniBus.Aspects;
 using MiniBus.Contracts;
 using MiniBus.Exceptions;
-using MiniBus.Handlers;
-using MiniBus.Context;
+using MiniBus.Core;
+using MiniBus.Filters;
 using MiniBus.Formatters;
-using MiniBus.MessageQueues;
 
 namespace MiniBus
 {
@@ -20,7 +19,7 @@ namespace MiniBus
             _logger = logger;
             _errorQueue = errorQueue;
             _readQueue = readQueue;
-            _writeQueueManager = new WriteQueueManager(_config.AutoDistributeOnSend, writeQueues);
+            _writeQueues = writeQueues;
         }
 
         /// <summary>
@@ -36,25 +35,39 @@ namespace MiniBus
         /// <summary>
         /// Takes a given type T and serializes it to json before
         /// wrapping it in an MSMQ message and placing it on a queue.
+        /// For the lifetime of the bus, if muliple queues are defined then each time Send is invoked:
+        /// a) if AutoDistributeOnSend is true then a message is placed on the next queue in the list in a round-robin fashion
+        /// b) otherwise a message is placed on all queues
         /// </summary>
         public void Send<T>(T dto)
         {
-            if (!_writeQueueManager.HasWriteQueues)
-            {
-                throw new BusException("Bus has not been configured for sending messages. Did you forget to call DefineWriteQueue on BusBuilder?");
-            }
+            GuardAgainstInvalidWriteQueues();
+            GuardAgainstInvalidErrorQueue();
 
-            foreach (var writeQueue in _writeQueueManager.GetWriteQueues())
+            // configure the pipeline for sending a message
+            var pipe = new PipeLine<MessageContext>();
+            pipe.AddAspect(new TransactionAspect<MessageContext>());
+            pipe.AddAspect(new LoggingAspect<MessageContext>());
+            pipe.AddAspect(new MoveToErrorQueueAspect<MessageContext>());
+            pipe.Register(new SendMessage());
+
+            if (_config.AutoDistributeOnSend)
             {
                 var message = CreateMsmqMessageFromDto(dto);
-                var context = new WriteMessageContext(writeQueue);
-                var sendMessageHandler = new SendMessageHandler(context, _config, _logger);
-                var loggingAspect = new LoggingAspect(sendMessageHandler, SendOperation, _logger);
-                var transactionAspect = new TransactionAspect(loggingAspect, _logger);
-                transactionAspect.Handle(message);                
+                var ctx = new MessageContext { Message = message, Config = _config, WriteQueue = _writeQueues.ElementAt(_nextQueue), ErrorQueue = _errorQueue, OpType = SendOperation, OnStep = LogMessage, OnComplete = SetNextQueueIndex };
+                pipe.Invoke(ctx);
+            }
+            else
+            {
+                foreach (var writeQueue in _writeQueues)
+                {
+                    var message = CreateMsmqMessageFromDto(dto);
+                    var ctx = new MessageContext { Message = message, Config = _config, WriteQueue = writeQueue, ErrorQueue = _errorQueue, OpType = SendOperation, OnStep = LogMessage };
+                    pipe.Invoke(ctx);
+                }
             }
         }
-        
+
         /// <summary>
         /// Reads messages off a queue, deserializes them into the 
         /// specified type T and invokes registered handlers. Useful when
@@ -63,29 +76,27 @@ namespace MiniBus
         /// </summary>
         public void Receive<T>()
         {
-            if (_readQueue == null || !_readQueue.IsInitialized)
+            GuardAgainstInvalidReadQueue();
+            GuardAgainstInvalidErrorQueue();
+
+            // configure the pipeline for receiving messages
+            var pipe = new PipeLine<MessageContext>();
+            pipe.AddAspect(new FailFastAspect<MessageContext>());
+            pipe.AddAspect(new DiscardAspect<MessageContext>());
+            pipe.AddAspect(new TransactionAspect<MessageContext>());
+            pipe.AddAspect(new LoggingAspect<MessageContext>());
+            pipe.AddAspect(new MoveToErrorQueueAspect<MessageContext>());
+            pipe.AddAspect(new RemoveFromReadQueueAspect<MessageContext>());
+            pipe.AddAspect(new RetryAspect<MessageContext>());
+            pipe.Register(new InvokeUserHandlers<T>());
+
+            foreach (Message message in _readQueue.PeekAllMessages())
             {
-                throw new BusException("Bus has not been configured for receiving messages. Did you forget to call DefineReadQueue on BusBuilder?");
+                var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, ErrorQueue = _errorQueue, Handlers = _handlers, OpType = ReceiveOperation, OnStep = LogMessage };
+                pipe.Invoke(ctx);
+
+                if (ctx.FailFast) { break; }
             }
-
-            foreach (Message message in _readQueue.GetAllMessages())
-            {                
-                var context = new ReadMessageContext(_errorQueue, _readQueue);
-                var receiveMessageHandler = new ReceiveMessageHandler<T>(_handlers, _config, _logger);
-                var retryAspect = new RetryAspect(receiveMessageHandler, _config, _logger);
-                var removeFromReadQueueAspect = new RemoveFromReadQueueAspect(retryAspect, context, _config, _logger);
-                var moveToErrorQueueAspect = new MoveToErrorQueueAspect(removeFromReadQueueAspect, context, _config, _logger);
-                var loggingAspect = new LoggingAspect(moveToErrorQueueAspect, ReceiveOperation, _logger);
-                var transactionAspect = new TransactionAspect(loggingAspect, _logger);
-                var discardAspect = new DiscardFailuresAspect(transactionAspect, _config, _logger);
-                var failFastAspect = new FailFastAspect(discardAspect, _config, _logger);
-                failFastAspect.Handle(message);
-
-                if (failFastAspect.Failed)
-                {
-                    break;
-                }
-            }            
         }
 
         /// <summary>
@@ -97,85 +108,63 @@ namespace MiniBus
         /// <typeparam name="T"></typeparam>
         public void ReceiveAsync<T>()
         {
-            if (_readQueue == null || !_readQueue.IsInitialized)
-            {
-                throw new BusException("Bus has not been configured for receiving messages. Did you forget to call DefineReadQueue on BusBuilder?");
-            }
+            GuardAgainstInvalidReadQueue();
+            GuardAgainstInvalidErrorQueue();
+
+            // configure the pipeline for receiving messages
+            var pipe = new PipeLine<MessageContext>();
+            pipe.AddAspect(new FailFastAspect<MessageContext>());
+            pipe.AddAspect(new DiscardAspect<MessageContext>());
+            pipe.AddAspect(new TransactionAspect<MessageContext>());
+            pipe.AddAspect(new LoggingAspect<MessageContext>());
+            pipe.AddAspect(new MoveToErrorQueueAspect<MessageContext>());
+            pipe.AddAspect(new RemoveFromReadQueueAspect<MessageContext>());
+            pipe.AddAspect(new RetryAspect<MessageContext>());
+            pipe.Register(new InvokeUserHandlers<T>());
 
             _readQueue.ReceiveAsync(message => {
 
-                var context = new ReadMessageContext(_errorQueue, _readQueue);
-                var receiveMessageHandler = new ReceiveMessageHandler<T>(_handlers, _config, _logger);
-                var retryAspect = new RetryAspect(receiveMessageHandler, _config, _logger);
-                var removeFromReadQueueAspect = new RemoveFromReadQueueAspect(retryAspect, context,_config, _logger);
-                var moveToErrorQueueAspect = new MoveToErrorQueueAspect(removeFromReadQueueAspect, context, _config, _logger);
-                var loggingAspect = new LoggingAspect(moveToErrorQueueAspect, ReceiveOperation, _logger);
-                var transactionAspect = new TransactionAspect(loggingAspect, _logger);
-                var discardAspect = new DiscardFailuresAspect(transactionAspect, _config, _logger);
-                var failFastAspect = new FailFastAspect(discardAspect, _config, _logger);
-                failFastAspect.Handle(message);
+                var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, ErrorQueue = _errorQueue, Handlers = _handlers, OpType = ReceiveOperation, OnStep = LogMessage };
+                pipe.Invoke(ctx);
 
-                if (failFastAspect.Failed)
+                if (ctx.FailFast)
                 {
+                    LogMessage("Invoking StopReceiveAsync because FailFast equals true");
                     _readQueue.StopReceiveAsync();
                 }
             });
+
+            LogMessage("Receiving...");
         }
 
         /// <summary>
-        /// Read messages containing the given type T off the defined 
-        /// error queue and moves them to the user defined read queue
-        /// </summary>
-        public void ReturnAllErrorMessages()
-        {
-            if ((_errorQueue == null || !_errorQueue.IsInitialized) || (_readQueue == null || !_readQueue.IsInitialized))
-            {
-                throw new BusException("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
-            }
-
-            try
-            {
-                foreach (Message message in _errorQueue.GetAllMessages())
-                {
-                    var context = new ReadMessageContext(_errorQueue, _readQueue);
-                    var returnToSourceHandler = new ReturnToSourceHandler(context, _logger);
-                    var loggingAspect = new LoggingAspect(returnToSourceHandler, ReturnOperation, _logger);
-                    loggingAspect.Handle(message);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new BusException(String.Format("A problem occurred retreiving messages from the error queue: {0}", ex));
-            }        
-        }
-
-        /// <summary>
-        /// Read specific message of the given read queue identified by the messageId parameter and copy it to one or more specified write queues
+        /// Read specific message off the given read queue identified by the messageId parameter and copy it to one or more defined write queues
         /// </summary>
         /// <param name="messageId"></param>
         public void Copy(string messageId)
         {
-            if (_errorQueue == null || !_errorQueue.IsInitialized || _readQueue == null || !_readQueue.IsInitialized)
-            {
-                throw new BusException("Bus has not been configured for copying messages from the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
-            }
-
-            if (!_writeQueueManager.HasWriteQueues)
-            {
-                throw new BusException("Bus has not been configured for returning messages to a write queue. Did you forget to call DefineWriteQueue on BusBuilder?");
-            }
+            GuardAgainstInvalidReadQueue();
+            GuardAgainstInvalidWriteQueues();
 
             try
             {
-                var message = _readQueue.GetMessageBy(messageId);
-                var context = new WriteMessageContext(_writeQueueManager.GetWriteQueues().First());
-                var copyMessageHandler = new CopyMessageHandler(context, _config, _logger);
-                var loggingAspect = new LoggingAspect(copyMessageHandler, SendOperation, _logger);
-                loggingAspect.Handle(message);
+                // configure the pipeline for copying messages
+                var pipe = new PipeLine<MessageContext>();
+                pipe.AddAspect(new TransactionAspect<MessageContext>());
+                pipe.AddAspect(new LoggingAspect<MessageContext>());
+                pipe.Register(new CopyMessage());
+
+                var message = _readQueue.PeekMessageBy(messageId);
+
+                foreach (var queue in _writeQueues)
+                {
+                    var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, WriteQueue = queue, OpType = CopyOperation, OnStep = LogMessage };
+                    pipe.Invoke(ctx);
+                }
             }
             catch (Exception ex)
             {
-                throw new BusException(string.Format("A problem occurred copying message: {0} - error: {1}", messageId, ex));
+                throw new BusException($"A problem occurred copying message: {messageId} - error: {ex}");
             }
         }
 
@@ -184,23 +173,54 @@ namespace MiniBus
         /// </summary>
         public void ReturnErrorMessage(string id)
         {
-            if ((_errorQueue == null || !_errorQueue.IsInitialized) || (_readQueue == null || !_readQueue.IsInitialized))
-            {
-                throw new BusException("Bus has not been configured for returning messages to the read queue. Did you forget to call DefineReadQueue and/or DeineErrorQueue on BusBuilder?");
-            }
+            GuardAgainstInvalidReadQueue();
+            GuardAgainstInvalidErrorQueue();
 
             try
             {
-                Message message = _errorQueue.GetMessageBy(id);
-                var context = new ReadMessageContext(_errorQueue, _readQueue);
-                var returnToSourceHandler = new ReturnToSourceHandler(context, _logger);
-                var loggingAspect = new LoggingAspect(returnToSourceHandler, ReturnOperation, _logger);
-                loggingAspect.Handle(message);
+                // configure the pipeline for return a message to its original queue
+                var pipe = new PipeLine<MessageContext>();
+                pipe.AddAspect(new TransactionAspect<MessageContext>());
+                pipe.AddAspect(new LoggingAspect<MessageContext>());
+                pipe.Register(new ReturnToSource());
+
+                Message message = _errorQueue.PeekMessageBy(id);
+                var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, ErrorQueue = _errorQueue, OpType = ReturnOperation, OnStep = LogMessage };
+                pipe.Invoke(ctx);
             }
             catch (Exception)
             {
-                throw new BusException(String.Format("Message with id {0} was not found on the error queue", id));
-            }          
+                throw new BusException($"Message with id {id} was not found on the error queue");
+            }
+        }
+
+        /// <summary>
+        /// Read messages containing the given type T off the defined
+        /// error queue and moves them to the user defined read queue
+        /// </summary>
+        public void ReturnAllErrorMessages()
+        {
+            GuardAgainstInvalidReadQueue();
+            GuardAgainstInvalidErrorQueue();
+
+            try
+            {
+                // configure the pipeline for return all message to their original queue
+                var pipe = new PipeLine<MessageContext>();
+                pipe.AddAspect(new TransactionAspect<MessageContext>());
+                pipe.AddAspect(new LoggingAspect<MessageContext>());
+                pipe.Register(new ReturnToSource());
+
+                foreach (Message message in _errorQueue.PeekAllMessages())
+                {
+                    var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, ErrorQueue = _errorQueue, OpType = ReturnOperation, OnStep = LogMessage };
+                    pipe.Invoke(ctx);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BusException($"A problem occurred retreiving messages from the error queue: {ex}");
+            }
         }
 
         /// <summary>
@@ -211,6 +231,12 @@ namespace MiniBus
             _readQueue.StopReceiveAsync();
         }
 
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         Message CreateMsmqMessageFromDto<T>(T dto)
         {
             return new Message
@@ -219,7 +245,7 @@ namespace MiniBus
                 Recoverable = true,
                 Body = dto,
                 AcknowledgeType = AcknowledgeTypes.FullReachQueue | AcknowledgeTypes.FullReceive,
-                UseJournalQueue = true,
+                UseJournalQueue = _config.UseJournalQueue,
                 TimeToBeReceived = _config.TimeToBeReceived == TimeSpan.Zero ? MessageQueue.InfiniteTimeout : _config.TimeToBeReceived,
                 Formatter = _config.JsonSerialization ? (IMessageFormatter)new JsonFormatter<T>() : new XmlMessageFormatter(new[] { typeof(T) }),
                 Label = Guid.NewGuid().ToString(),
@@ -231,10 +257,28 @@ namespace MiniBus
             Dispose(false);
         }
 
-        public void Dispose()
+        void GuardAgainstInvalidWriteQueues()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            if (!_writeQueues.Any())
+            {
+                throw new BusException("Bus has not been configured correctly for sending messages. Did you forget to call DefineWriteQueue on BusBuilder?");
+            }
+        }
+
+        void GuardAgainstInvalidReadQueue()
+        {
+            if (_readQueue == null || !_readQueue.IsInitialized)
+            {
+                throw new BusException("Bus has not been configured correctly for receiving messages. Did you forget to call DefineReadQueue on BusBuilder?");
+            }
+        }
+
+        void GuardAgainstInvalidErrorQueue()
+        {
+            if (_errorQueue == null || !_errorQueue.IsInitialized)
+            {
+                throw new BusException("Bus has not been configured correctly - An error queue has not been defined. Did you forget to call DeineErrorQueue on BusBuilder?");
+            }
         }
 
         void Dispose(bool disposing)
@@ -243,30 +287,38 @@ namespace MiniBus
 
             if (disposing)
             {
-                _writeQueueManager.Dispose();
-
-                if (_readQueue != null)
-                {
-                    _readQueue.Dispose();
-                }
-                if (_errorQueue != null)
-                {
-                    _errorQueue.Dispose();
-                }
+                _readQueue?.Dispose();
+                _errorQueue?.Dispose();
+                _writeQueues.ToList().ForEach(q => q.Dispose());
             }
 
             _disposed = true;
         }
 
-        readonly WriteQueueManager _writeQueueManager;
+        void SetNextQueueIndex()
+        {
+            // when AutoDistributeOnSend is configured keep track of the next queue to send a message to. When the last queue is used go back to the start.
+            _nextQueue = _nextQueue < _writeQueues.Count() - 1 ? _nextQueue + 1 : 0;
+        }
+
+        void LogMessage(string text)
+        {
+            _logger.Log(text);
+        }
+
         readonly IMessageQueue _readQueue;
         readonly IMessageQueue _errorQueue;
+        readonly IEnumerable<IMessageQueue> _writeQueues;
         readonly IBusConfig _config;
         readonly ILogMessages _logger;
+
         const string SendOperation = "SEND";
         const string ReceiveOperation = "RECEIVE";
         const string ReturnOperation = "RETURN_TO_SOURCE";
+        const string CopyOperation = "COPY";
         readonly List<Delegate> _handlers = new List<Delegate>();
+
+        int _nextQueue;
         bool _disposed;
     }
 }

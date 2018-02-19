@@ -5,10 +5,10 @@ using System.Security.Principal;
 using MiniBus.Contracts;
 using MiniBus.Logging;
 using MiniBus.Exceptions;
-using MiniBus.Infrastructure;
 using System.Threading;
 using MiniBus.MessageQueues;
 using System.Collections.Generic;
+using System.ServiceProcess;
 using System.Text.RegularExpressions;
 
 namespace MiniBus
@@ -25,7 +25,7 @@ namespace MiniBus
             _config.ReadQueue = name;
             return this;
         }
-        
+
         public BusBuilder DefineWriteQueue(string name)
         {
             _config.WriteQueues.Add(name);
@@ -48,21 +48,16 @@ namespace MiniBus
             return this;
         }
 
-        public BusBuilder NumberOfRetries(int maxRetries)
+        public BusBuilder NumberOfRetries(int maxRetries, int slidingRetryInterval = 0)
         {
             _config.MaxRetries = maxRetries;
+            _config.SlidingRetryInterval = slidingRetryInterval;
             return this;
         }
-        
+
         public BusBuilder WithLogging(ILogMessages logger)
         {
             _logger = logger;
-            return this;
-        }
-        
-        public BusBuilder InstallMsmqIfNeeded()
-        {
-            _config.InstallMsmq = true;
             return this;
         }
 
@@ -71,7 +66,7 @@ namespace MiniBus
             _config.AutoCreateLocalQueues = true;
             return this;
         }
-        
+
         public BusBuilder EnlistInAmbientTransactions()
         {
             _config.EnlistInAmbientTransactions = true;
@@ -108,6 +103,12 @@ namespace MiniBus
             return this;
         }
 
+        public BusBuilder UseJournalQueue()
+        {
+            _config.UseJournalQueue = false;
+            return this;
+        }
+
         public BusBuilder OnErrorAsync(params Action<string>[] actions)
         {
             _config.ErrorActions.AddRange(actions);
@@ -122,17 +123,9 @@ namespace MiniBus
 
         public IBus CreateBus()
         {
-            if (string.IsNullOrEmpty(_config.ReadQueue) && _config.WriteQueues.Count == 0)
-            {
-                throw new ArgumentException("You need to supply at least one endpoint either to read from or to write to");
-            }
+            GuardAgainstInvalidQueueStates();
 
-            if (string.IsNullOrEmpty(_config.ErrorQueue))
-            {
-                throw new ArgumentException("You need to define an endpoint for error messages");
-            }
-
-            InitializeMsmq(() =>
+            IsMsmqInstalled(() =>
             {
                 InititializeErrorQueue();
                 InitializeReadQueue();
@@ -142,27 +135,12 @@ namespace MiniBus
             return new Bus(_config, _logger, _errorQueue, _readQueue, _writeQueues);
         }
 
-        void InitializeMsmq(Action onSuccess)
+        void IsMsmqInstalled(Action onSuccess)
         {
-            if (_config.InstallMsmq && !Msmq.IsInstalled)
-            {
-                try
-                {
-                    Msmq.Install();
-                    onSuccess();
-                }
-                catch (Exception ex)
-                {
-                    _logger.Log(ex.Message);
-                }
-            }
+            if (ServiceController.GetServices().Any(s => s.ServiceName == "MSMQ"))
+                onSuccess();
             else
-            {
-                if (Msmq.IsInstalled)
-                    onSuccess();
-                else
-                    _logger.Log("Msmq is not installed. Create the bus with InstallMsmqIfNeeded and run as administrator.");
-            }
+                throw new BusException("Msmq is not installed!");
         }
 
         void InititializeErrorQueue()
@@ -171,7 +149,7 @@ namespace MiniBus
             {
                 string machineName = GetMachineName(_config.ErrorQueue);
                 string queueName = GetQueueName(_config.ErrorQueue);
-                string errorEndpointPath = FormatPathToQueue(".", _config.ErrorQueue);
+                string errorEndpointPath = FormatPathToQueue(LocalMachine, _config.ErrorQueue);
 
                 CreateLocalEndpointOnDisk(machineName, errorEndpointPath);
                 CreateQueueToPutErrorsOn(machineName, queueName, errorEndpointPath);
@@ -184,9 +162,9 @@ namespace MiniBus
             {
                 string machineName = GetMachineName(_config.ReadQueue);
                 string queueName = GetQueueName(_config.ReadQueue);
-                string readEndpointPath = FormatPathToQueue(".", _config.ReadQueue);
+                string readEndpointPath = FormatPathToQueue(LocalMachine, _config.ReadQueue);
 
-                CreateLocalEndpointOnDisk(".", readEndpointPath);
+                CreateLocalEndpointOnDisk(LocalMachine, readEndpointPath);
                 ValidateQueue(machineName, queueName, readEndpointPath);
                 CreateReadQueueFromPath(readEndpointPath);
             }
@@ -194,65 +172,64 @@ namespace MiniBus
 
         void InitializeWriteQueues()
         {
-            if (_config.WriteQueues.Any())
+            _config.WriteQueues.ForEach(item =>
             {
-                foreach (var name in _config.WriteQueues)
-                {
-                    string machineName = GetMachineName(name);
-                    string queueName = GetQueueName(name);
-                    string writeEndpointPath = FormatPathToQueue(machineName, queueName);
+                string machineName = GetMachineName(item);
+                string queueName = GetQueueName(item);
+                string writeEndpointPath = FormatPathToQueue(machineName, queueName);
 
-                    CreateLocalEndpointOnDisk(machineName, writeEndpointPath);
-                    ValidateQueue(machineName, queueName, writeEndpointPath);
-                    CreateWriteQueueFromPath(writeEndpointPath);
-                }
-            }
+                CreateLocalEndpointOnDisk(machineName, writeEndpointPath);
+                ValidateQueue(machineName, queueName, writeEndpointPath);
+                CreateWriteQueueFromPath(writeEndpointPath);
+            });
         }
 
         static string GetMachineName(string queue)
         {
-            string machineName = ".";
-
-            if (queue.Contains("@"))
-            {
-                machineName = queue.Substring(queue.IndexOf('@') + 1);
-            }
-
-            return machineName;
+            return queue.Contains("@") ? queue.Substring(queue.IndexOf('@') + 1) : LocalMachine;
         }
 
         static string GetQueueName(string queue)
         {
-            string queueName = queue;
-
-            if (queue.Contains("@"))
-            {
-                queueName = queue.Substring(0, queue.IndexOf('@'));
-            }
-
-            return queueName;
+            return queue.Contains("@") ? queue.Substring(0, queue.IndexOf('@')) : queue;
         }
 
-        static string FormatPathToQueue(string machineName, string queueName)
+        static string FormatPathToQueue(string machine, string queue)
         {
-            // local
-            if (machineName == ".")
+            string LocalQueue(string queueName)
             {
-                return string.Format(@".\private$\{0}", queueName);
+                return $@".\private$\{queueName}";
             }
 
-            // remote
-            bool isIpAddress = Regex.Match(machineName, ipaddress).Success;
-            string transport = isIpAddress ? "TCP" : "OS";
-            return string.Format(@"FormatName:DIRECT={0}:{1}\private$\{2}", transport, machineName, queueName);
+            string RemoteQueue(string machineName, string queueName)
+            {
+                bool isIpAddress = Regex.Match(machineName, Ipaddress).Success;
+                string transport = isIpAddress ? "TCP" : "OS";
+                return $@"FormatName:DIRECT={transport}:{machineName}\private$\{queueName}";
+            }
+
+            return machine == LocalMachine ? LocalQueue(queue) : RemoteQueue(machine, queue);
+        }
+
+        void GuardAgainstInvalidQueueStates()
+        {
+            if (string.IsNullOrEmpty(_config.ReadQueue) && _config.WriteQueues.Count == 0)
+            {
+                throw new ArgumentException("You need to supply at least one endpoint either to read from or to write to");
+            }
+
+            if (string.IsNullOrEmpty(_config.ErrorQueue))
+            {
+                throw new ArgumentException("You need to define an endpoint for error messages");
+            }
         }
 
         void CreateLocalEndpointOnDisk(string machineName, string path)
         {
             // we'll create local queues if required and they don't already exist
-            if (machineName == "." && _config.AutoCreateLocalQueues)
-            {                
-                if (MessageQueue.Exists(path)){ return;}
+            if (machineName == LocalMachine && _config.AutoCreateLocalQueues)
+            {
+                if (MessageQueue.Exists(path)) { return; }
 
                 // create and set permissions
                 using (var queue = MessageQueue.Create(path, true))
@@ -268,7 +245,8 @@ namespace MiniBus
         {
             if (!QueueExists(machineName, queueName, path))
             {
-                throw new QueueNotFoundException(string.Format("{0} doesn't exist {1}. Did you type it correctly?", queueName, machineName == "." ? "locally" : "on " + machineName));
+                throw new QueueNotFoundException(
+                    $"{queueName} doesn't exist {(machineName == LocalMachine ? "locally" : "on " + machineName)}. Did you type it correctly?");
             }
         }
 
@@ -296,29 +274,32 @@ namespace MiniBus
 
         static bool QueueExists(string machineName, string queueName, string path)
         {
-            bool isIpAddress = Regex.Match(machineName, ipaddress).Success;
+            bool isIpAddress = Regex.Match(machineName, Ipaddress).Success;
 
             if (isIpAddress)
             {
                 return true; // assume valid as no means of retrieving queues when using ipaddress
             }
 
-            if (machineName == ".")
+            if (machineName == LocalMachine)
             {
                 return MessageQueue.Exists(path);
             }
 
             // MessageQueue.Exists doesn't work for remote machines
             var results = MessageQueue.GetPrivateQueuesByMachine(machineName);
-            return results.Any(q => q.QueueName == string.Format(@"private$\{0}", queueName));
+            return results.Any(q => q.QueueName == $@"private$\{queueName}");
         }
 
-        List<IMessageQueue> _writeQueues = new List<IMessageQueue>();
+        readonly List<IMessageQueue> _writeQueues = new List<IMessageQueue>();
+        readonly IBusConfig _config;
+
         IMessageQueue _readQueue;
         IMessageQueue _errorQueue;
-        IBusConfig _config;
         ILogMessages _logger = new NullLogger();
 
-        const string ipaddress = "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+        const string Ipaddress = "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+        const string LocalMachine = ".";
     }
+
 }

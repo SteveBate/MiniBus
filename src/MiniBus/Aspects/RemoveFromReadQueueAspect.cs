@@ -1,42 +1,35 @@
-﻿using MiniBus.Contracts;
-using System;
-using System.Messaging;
+﻿using System.Messaging;
+using MiniBus.Core;
 
 namespace MiniBus.Aspects
 {
-    internal class RemoveFromReadQueueAspect : IHandleMessage<Message>
+    /// <summary>
+    /// RemoveFromReadQueueAspect removes the message from the source queue.
+    /// However, in the event of an error if FailFast is true the message is left on the read queue
+    /// </summary>
+    internal class RemoveFromReadQueueAspect<T> : IAspect<T>, IFilter<T> where T : MessageContext
     {
-        public RemoveFromReadQueueAspect(IHandleMessage<Message> action, IReadMessageContext context, IBusConfig config, ILogMessages logger)
-        {
-            _context = context;
-            _config = config; 
-            _logger = logger;
-            _inner = action;
-        }
-
-        public void Handle(Message msg)
+        public void Execute(T ctx)
         {
             try
             {
-                _inner.Handle(msg);
-                _logger.Log(string.Format("Message: {0} - Removing from read queue: {1}", msg.Label, _context.ReadQueueName));
-                _context.ReadQueue.ReceiveById(msg.Id, MessageQueueTransactionType.Single);
+                Next.Execute(ctx);
+                ctx.OnStep($"Message: {ctx.Message.Label} - Removing from read queue: {ctx.ReadQueue.FormatName}");
+                ctx.ReadQueue.ReceiveById(ctx.Message.Id, MessageQueueTransactionType.Single);
             }
             catch
             {
-                if (!_config.FailFast)
+                if (!ctx.Config.FailFast && !ctx.Handled)
                 {
-                    _logger.Log(string.Format("Message: {0} - Removing from read queue: {1}", msg.Label, _context.ReadQueueName));
-                    _context.ReadQueue.ReceiveById(msg.Id, MessageQueueTransactionType.Single);
+                    ctx.OnStep($"Message: {ctx.Message.Label} - Removing from read queue: {ctx.ReadQueue.FormatName}");
+                    ctx.ReadQueue.ReceiveById(ctx.Message.Id, MessageQueueTransactionType.Single);
                 }
 
                 throw;
             }
         }
 
-        readonly IReadMessageContext _context;
-        readonly IBusConfig _config;
-        readonly ILogMessages _logger;
-        readonly IHandleMessage<Message> _inner;
+        public IAspect<T> Next { get; set; }
     }
+
 }
