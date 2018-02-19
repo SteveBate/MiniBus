@@ -1,6 +1,6 @@
 # MiniBus
 
-A small .Net messaging library built on top of MSMQ for application integration scenarios. Support for transactions, automatic retries, json serialization, and more. Provides a simple and reliable way of integrating applications and services via message queues minus the complexity of a full-on ESB.
+A small .Net messaging library built on top of MSMQ for application integration scenarios. Support for transactions, automatic retries, json serialization, and more. Provides a simple and reliable way of integrating applications and services via message queues minus the complexity of a full-on ESB. 
 
 * NOTE - MiniBus now appears as mini.bus in nuget package manager
 
@@ -13,25 +13,28 @@ MiniBus offers the following features:
 * Choice of XML or JSON serialization
 * Automatic Message Distribution for load balancing
 * Enlist in ambient transactions
-* Configurable automatic retries
+* Configurable, robust automatic retries
 * Move to error queue on failure
 * Automatically create local queues
-* Install MSMQ if not detected
 * Simple logging support
 * Return error messages back to the read queue
 * Copy message to one or more queues
 * Fail fast option
 * Discard failures
 
+## Update
+
+The core of MiniBus has now been rewritten to both more maintainable, testable, and reliable.
+
 ## How to use
 
 A bus instance is created via the **BusBuilder** class using the many options available to configure it to your needs but first create a type to use as a message:
 
 ```csharp
-public class Person
+public class PlaceOrder
 {
-	public string Name { get; set; }
-	public int Age { get; set; }
+	public string OrderNumber { get; set; }
+	public string Description { get; set; }
 }
 ```
 #### Sending 
@@ -40,7 +43,6 @@ public class Person
 // create a bus for sending messages
 IBus bus = new BusBuilder()
     .WithLogging(new FileLogger())
-    .InstallMsmqIfNeeded()
     .DefineErrorQueue("MiniBus.errors")
     .DefineWriteQueue("MiniBus.messages1")
     .DefineWriteQueue("MiniBus.messages2@remotepc")
@@ -53,10 +55,10 @@ IBus bus = new BusBuilder()
     .CreateBus();
 	
 // create your message type
-var bob = new Person { p.Name = "Bob", Age = 22 };
+var order = new PlaceOrder { o.OrderNumber = "N0232344", Description = "Fries and a Shake" };
 
 // send it
-bus.Send(bob);
+bus.Send(order);
 ```
 
 ####	 Receving
@@ -64,9 +66,9 @@ bus.Send(bob);
 Create a message handler by implementing the interface **IHandleMessage&lt;T&gt;**:
 
 ```csharp
-class PersonHandler : IHandleMessage<Person>
+class OrderHandler : IHandleMessage<PlaceOrder>
 {
-    public void Handle(Person p)
+    public void Handle(PlaceOrder o)
     {
         // process the message
     }
@@ -76,28 +78,31 @@ Then register it with the bus and call the **Receive** method for synchronous pr
 
 ```csharp
 // create a bus for receiving messages
+
+int slide = 4000; // time in milliseconds between retries multiplied by the current retry
+
 IBus bus = new BusBuilder()
     .WithLogging(new FileLogger())
     .DefineErrorQueue("MiniBus.errors")
     .DefineReadQueue("MiniBus.messages1")
     .JsonSerialization()
-	.NumberOfRetries(3)
+	.NumberOfRetries(3, slide)
     .CreateBus();
 	
 // register one or more message handlers
-bus.RegisterHandler<Person>(new PersonHandler());
+bus.RegisterHandler<PlaceOrder>(new OrderHandler());
 
 // process messages on the read queue synchronously
-bus.Receive<Person>();
+bus.Receive<PlaceOrder>();
 ```
 Or **ReceiveAsync** for asynchronous processing:
 
 ```csharp
 // register one or more message handlers
-bus.RegisterHandler<Person>(new PersonHandler());
+bus.RegisterHandler<PlaceOrder>(new OrderHandler());
 
 // process messages on the read queue asynchronously
-bus.ReceiveAsync<Person>();
+bus.ReceiveAsync<PlaceOrder>();
 ```
 		
 #### BusBuilder Options
@@ -141,10 +146,6 @@ class FileLogger : ILogMessages
 }
 ```
 
-##### * InstallMsmqIfNeeded
-
-If you're running your application with MiniBus for the first time on a clean machine, it's unlikely that MSMQ is installed. Using this option, MiniBus will attempt to install it for you. As of this writing, it is only implemented and tested for Windows 7 and above.
-
 ##### * DefineErrorQueue
 
 When a message cannot be processed, you don't want to lose it. By defining an error queue MiniBus has somewhere to place the failed message until you're ready to try again. In order to do so, you can create the bus and call <strong>ReturnAllErrorMessages</strong> to have the messages moved back to the read queue.
@@ -175,7 +176,7 @@ Sometimes you only want a message to be sent or received as part of a larger tra
 
 ##### * NumberOfRetries
 
-MiniBus by default will move a failed message to the error queue as soon as an error is detected. Sometimes, perhaps due to network latency in a web service call, the operation would succeed if tried again. The NumberOfRetries method let's you specify how many times MiniBus should retry the operation before giving up and moving the message to the error queue.
+MiniBus by default will move a failed message to the error queue as soon as an error is detected. Sometimes, perhaps due to network latency in a web service call, the operation would succeed if tried again. The NumberOfRetries method let's you specify how many times MiniBus should retry the operation before giving up and moving the message to the error queue. Additionally, a new optional parameter, slidingRetryInterval has been added to allow a period of time to pass before a retry should occur.
 
 ##### * AutoDistributeOnSend
 
@@ -196,6 +197,14 @@ Provides a hook to allow you to specify code that should be executed (asynchrono
 ##### * AutoPurgeSystemJournal
 
 Left unattended and with no administrator monitoring MSMQ can grind to a halt with an "insufficient resources" error. This occurs when the system32\msmq\storage directoy has grown too large with copies of each and every message placed on the "Journal Messages" system queue. Using the AutoPurgeSystemJournal option tells MiniBus to attempt to clean up this queue every fifteen minutes in order to reduce the chances of the error occuring.
+
+##### * UseJournal
+
+Specifies whether a copy of the message should be stored on the originating PC
+
+##### * TimeToBeReceived
+
+Specifies how long a message should exist on the queue for before automatically being removed and disposed
 
 ## Building the Source
 
