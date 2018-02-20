@@ -1,6 +1,7 @@
 ﻿using MiniBus.Contracts;
 using log4net;
 using System;
+using System.Threading;
 using System.Transactions;
 
 namespace MiniBus.Sample
@@ -103,11 +104,15 @@ namespace MiniBus.Sample
                 .TimeToBeReceived(TimeSpan.FromMinutes(5))
                 .CreateBus();
 
-            
-            // transaction scope isn't required unless modifying another transactional resource at the same time
-            using (var scope = new TransactionScope())
+
+            // transaction scope isn't required unless modifying another transactional resource at the same time i.e. a database,
+            // but if you suplpy one be sure to set appropriate TransactionOptions, don't rely on the default new TransactionScope()
+            // as this defaults to an IsolationLevel of Serializable and a timeout of 1 minute
+            var options = new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted, Timeout = TransactionManager.MaximumTimeout };
+
+            using (var scope = new TransactionScope(TransactionScopeOption.RequiresNew, options))
             {
-                for (int i = 1; i <= 10; i++)
+                for (int i = 1; i <= 100; i++)
                 {
                     var p = new Person { Name = "Bob", Age = i };
 
@@ -453,6 +458,8 @@ namespace MiniBus.Sample
             }
 
             Console.WriteLine("Recevied person: {0} aged: {1}", p.Name, p.Age);
+
+            Thread.Sleep(1000);
         }
 
         readonly bool _throwException;
