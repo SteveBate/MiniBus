@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Messaging;
+using System.ServiceProcess;
 
 namespace MiniBus.MessageQueues
 {
@@ -61,9 +62,15 @@ namespace MiniBus.MessageQueues
                 catch (MessageQueueException ex)
                 {
                     _logger.Log(ex.ToString());
-                    _logger.Log("Restarting ReceiveAsync...");
+
+                    // ensure MSMQ hasn't gone down before attempting to start receiving messages again
+                    var svc = new ServiceController("MSMQ");
+                    while (svc.Status != ServiceControllerStatus.Running) { svc.Refresh(); }
+
+                    _queue.PeekCompleted -= _handler;
+                    _queue = new MessageQueue(_queue.Path);
+                    _queue.PeekCompleted += _handler;
                     _queue.BeginPeek();
-                    _logger.Log("Waiting for message after exception...");
                 }
             };
 
