@@ -10,10 +10,7 @@ namespace MiniBus.Aspects
         {
             ctx.OnStep($"Message: {ctx.Message.Label} - Transaction started");
 
-            // defaults for TransactionScope are Serializable and 1 minute neither of which are ideal for SQL Server
-            var options = new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted, Timeout = TransactionManager.MaximumTimeout };
-
-            using (var scope = new TransactionScope(TransactionScopeOption.Required, options))
+            using (var scope = new TransactionScope(TransactionScopeOption.Required))
             {
                 try
                 {
