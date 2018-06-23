@@ -20,18 +20,33 @@ namespace MiniBus
             _config = new BusConfig();
         }
 
+        /// <summary>
+        /// DefineReadQueue - Specify the name of a queue where messages will be read from and passed to your handler
+        /// </summary>
+        /// <param name="name">The name of a queue</param>
+        /// <returns></returns>
         public BusBuilder DefineReadQueue(string name)
         {
             _config.ReadQueue = name;
             return this;
         }
 
+        /// <summary>
+        /// DefineWriteQueue - Specify a queue where messages will be sent to
+        /// </summary>
+        /// <param name="name">The name of a queue. When the queue is on a remote machine use the format name@machine</param>
+        /// <returns></returns>
         public BusBuilder DefineWriteQueue(string name)
         {
             _config.WriteQueues.Add(name);
             return this;
         }
 
+        /// <summary>
+        /// DefineWriteQueues - Specify in one method all the queues to be written to
+        /// </summary>
+        /// <param name="names">The names of all the write queues. When the queue is on a remote machine use the format name@machine</param>
+        /// <returns></returns>
         public BusBuilder DefineWriteQueues(params string[] names)
         {
             foreach (var name in names)
@@ -42,85 +57,141 @@ namespace MiniBus
             return this;
         }
 
+        /// <summary>
+        /// DefineErrorQueue - Specify the queue where messages should be eventually placed after all retry attempts have failed
+        /// </summary>
+        /// <param name="name">The name of the error queue</param>
         public BusBuilder DefineErrorQueue(string name)
         {
             _config.ErrorQueue = name;
             return this;
         }
 
-        public BusBuilder NumberOfRetries(int maxRetries, int slidingRetryInterval = 0)
+        /// <summary>
+        /// NumberOfRetries - specify how many times MiniBus should attempt to process the message
+        /// </summary>
+        /// <param name="maxRetries">Maximumn number of times to to retry</param>
+        /// <param name="slidingRetryInterval">number of milliseconds to wait between retries multiplied by maxRetries</param>
+        /// <param name="environmentalErrorsOnly">Only retry when error is realistically recoverable - to maintain backwards compatability the default value is false</param>
+        public BusBuilder NumberOfRetries(int maxRetries, int slidingRetryInterval = 0, bool environmentalErrorsOnly = false)
         {
             _config.MaxRetries = maxRetries;
             _config.SlidingRetryInterval = slidingRetryInterval;
+            _config.EnvironmentalErrorsOnly = environmentalErrorsOnly;
             return this;
         }
 
+        /// <summary>
+        /// WithLogging - The object that will be responsible for outputting log information
+        /// </summary>
+        /// <param name="logger">The instance of an object implmenting the ILogMessage interface</param>
         public BusBuilder WithLogging(ILogMessages logger)
         {
             _logger = logger;
             return this;
         }
 
+        /// <summary>
+        /// CreateLocalQueuesAutomatically - Specify this option to have the queues created for you of they don't already exists
+        /// </summary>
         public BusBuilder CreateLocalQueuesAutomatically()
         {
             _config.AutoCreateLocalQueues = true;
             return this;
         }
 
+        /// <summary>
+        /// EnlistInAmbientTransactions - Specify this option to join an existing transaction and
+        /// ensure all operations are either committed or rolled back together
+        /// </summary>
         public BusBuilder EnlistInAmbientTransactions()
         {
             _config.EnlistInAmbientTransactions = true;
             return this;
         }
 
+        /// <summary>
+        /// JsonSerialization - Specify this option to have messages sent in the JSON format. The default is XML.
+        /// XML requires the type to be shared between the sender and the receiver. JSON is a looser format with
+        /// no such requirement
+        /// </summary>
         public BusBuilder JsonSerialization()
         {
             _config.JsonSerialization = true;
             return this;
         }
 
+        /// <summary>
+        /// TimeToBeReceived - Specify this option to determine how long the message will live on the queue for before automatically expiring
+        /// </summary>
+        /// <param name="span">A TimeSpan value</param>
         public BusBuilder TimeToBeReceived(TimeSpan span)
         {
             _config.TimeToBeReceived = span;
             return this;
         }
 
+        /// <summary>
+        /// AutoDistributeOnSend - Specify this option to have messages sent to a different queue on each call to send to provide
+        /// rudimentary roud-robin load balancing. When using the Send overload to pass in a destination queue this operation is
+        /// not applicable
+        /// </summary>
         public BusBuilder AutoDistributeOnSend()
         {
             _config.AutoDistributeOnSend = true;
             return this;
         }
 
+        /// <summary>
+        /// FailFast - Stop processing the queue immediately. Leaves the message on the queue rather than move to an error queue.
+        /// This can be important when order of messages is important.
+        /// </summary>
         public BusBuilder FailFast()
         {
             _config.FailFast = true;
             return this;
         }
 
+        /// <summary>
+        /// DiscardFailedMessages - Specify this option to drop error messages rather than move them to the error queue
+        /// </summary>
         public BusBuilder DiscardFailedMessages()
         {
             _config.DiscardFailures = true;
             return this;
         }
 
+        /// <summary>
+        /// UseJournalQueue - Specify this to indicate that a copy of the message should be kept in the machine journal of the sending computer
+        /// </summary>
         public BusBuilder UseJournalQueue()
         {
             _config.UseJournalQueue = false;
             return this;
         }
 
+        /// <summary>
+        /// OnErrorAsync - Provides a means to have one or more user actions invoked when an error occurs
+        /// </summary>
+        /// <param name="actions">one or more void methods that take a string parameter</param>
         public BusBuilder OnErrorAsync(params Action<string>[] actions)
         {
             _config.ErrorActions.AddRange(actions);
             return this;
         }
 
+        /// <summary>
+        /// AutoPurgeSystemJournal - Specify this to have MiniBus keep on top of too many messages causing MSMQ to grind to a halt
+        /// </summary>
         public BusBuilder AutoPurgeSystemJournal()
         {
             _config.AutoPurgeSystemJournal = true;
             return this;
         }
 
+        /// <summary>
+        /// CreateBus - Create and return a configured bus ready to send or receive messages
+        /// </summary>
         public IBus CreateBus()
         {
             GuardAgainstInvalidQueueStates();

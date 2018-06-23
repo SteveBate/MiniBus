@@ -10,4 +10,12 @@ namespace MiniBus.Tests.Fakes
             throw new NotImplementedException();
         }
     }
+
+    public sealed class FakeEnvironmentExceptionThrowingUserHandler : IHandleMessage<FakeDto>
+    {
+        public void Handle(FakeDto msg)
+        {
+            throw new NotImplementedException("deadlocked");
+        }
+    }
 }

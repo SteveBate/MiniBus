@@ -355,7 +355,7 @@ namespace MiniBus.Tests.BusTests
         }
 
         [Test]
-        public void Should_log_retries_on_error()
+        public void Should_always_retry_when_not_configured_for_environmental_errors_only()
         {
             var logger = new FakeLogger();
             var handler = new FakeExceptionThrowingUserHandler();
@@ -382,6 +382,62 @@ namespace MiniBus.Tests.BusTests
             Assert.That(logger[14], Is.StringContaining("Removing from read queue: readQueue"));
             Assert.That(logger[15], Is.StringContaining("Moving to error queue: errorQueue"));
             Assert.That(logger[16], Is.StringContaining("EXCEPTION - The method or operation is not implemented."));
+            Assert.That(logger[18], Is.StringContaining("Completed RECEIVE Operation"));
+            Assert.That(logger[19], Is.StringContaining("Transaction rolled back"));
+        }
+
+        [Test]
+        public void Should_not_retry_when_configured_for_environmental_errors_only_and_error_is_user_error()
+        {
+            var logger = new FakeLogger();
+            var handler = new FakeExceptionThrowingUserHandler();
+            var errorQueue = new FakeValidMessageQueue("errorQueue");
+            var bus = new Bus(new FakeBusConfig { MaxRetries = 2, EnvironmentalErrorsOnly = true }, logger, errorQueue, QueueWithOneMessage("readQueue"), new[] { new FakeValidMessageQueue("writeQueue1") });
+            bus.RegisterHandler(handler);
+
+            bus.Receive<FakeDto>();
+
+            Assert.That(logger[0], Is.StringContaining("Transaction started"));
+            Assert.That(logger[1], Is.StringContaining("Started RECEIVE Operation"));
+            Assert.That(logger[2], Is.StringContaining("Payload: FakeDto"));
+            Assert.That(logger[3], Is.StringContaining("Invoking registered handler"));
+            Assert.That(logger[4], Is.StringContaining("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
+            Assert.That(logger[5], Is.StringContaining("Invocation failed"));
+            Assert.That(logger[6], Is.StringContaining("Removing from read queue: readQueue"));
+            Assert.That(logger[7], Is.StringContaining("Moving to error queue: errorQueue"));
+            Assert.That(logger[8], Is.StringContaining("EXCEPTION - The method or operation is not implemented."));
+            Assert.That(logger[10], Is.StringContaining("Completed RECEIVE Operation"));
+            Assert.That(logger[11], Is.StringContaining("Transaction rolled back"));
+        }
+
+        [Test]
+        public void Should_retry_when_configured_for_environmental_errors_only_and_error_is_environmental()
+        {
+            var logger = new FakeLogger();
+            var handler = new FakeEnvironmentExceptionThrowingUserHandler();
+            var errorQueue = new FakeValidMessageQueue("errorQueue");
+            var bus = new Bus(new FakeBusConfig { MaxRetries = 2, EnvironmentalErrorsOnly = true}, logger, errorQueue, QueueWithOneMessage("readQueue"), new[] { new FakeValidMessageQueue("writeQueue1") });
+            bus.RegisterHandler(handler);
+
+            bus.Receive<FakeDto>();
+
+            Assert.That(logger[0], Is.StringContaining("Transaction started"));
+            Assert.That(logger[1], Is.StringContaining("Started RECEIVE Operation"));
+            Assert.That(logger[2], Is.StringContaining("Payload: FakeDto"));
+            Assert.That(logger[3], Is.StringContaining("Invoking registered handler"));
+            Assert.That(logger[4], Is.StringContaining("TRANSACTION STATUS: Active - REASON: deadlocked"));
+            Assert.That(logger[5], Is.StringContaining("Retry attempt 1"));
+            Assert.That(logger[6], Is.StringContaining("Payload: FakeDto"));
+            Assert.That(logger[7], Is.StringContaining("Invoking registered handler"));
+            Assert.That(logger[8], Is.StringContaining("TRANSACTION STATUS: Active - REASON: deadlocked"));
+            Assert.That(logger[9], Is.StringContaining("Retry attempt 2"));
+            Assert.That(logger[10], Is.StringContaining("Payload: FakeDto"));
+            Assert.That(logger[11], Is.StringContaining("Invoking registered handler"));
+            Assert.That(logger[12], Is.StringContaining("TRANSACTION STATUS: Active - REASON: deadlocked"));
+            Assert.That(logger[13], Is.StringContaining("Invocation failed"));
+            Assert.That(logger[14], Is.StringContaining("Removing from read queue: readQueue"));
+            Assert.That(logger[15], Is.StringContaining("Moving to error queue: errorQueue"));
+            Assert.That(logger[16], Is.StringContaining("EXCEPTION - deadlocked"));
             Assert.That(logger[18], Is.StringContaining("Completed RECEIVE Operation"));
             Assert.That(logger[19], Is.StringContaining("Transaction rolled back"));
         }

@@ -25,9 +25,11 @@ namespace MiniBus.Aspects
                 // once an exception occurs the current transaction is damaged goods
                 Transaction.Current.Rollback();
 
+                var shouldRetry = !ctx.Config.EnvironmentalErrorsOnly || IsRecoverable(e);
+
                 _retry++;
 
-                if (_retry <= ctx.Config.MaxRetries)
+                if (shouldRetry && _retry <= ctx.Config.MaxRetries)
                 {
                     if (ctx.Config.SlidingRetryInterval > 0)
                     {
@@ -61,5 +63,12 @@ namespace MiniBus.Aspects
         public IAspect<T> Next { get; set; }
 
         int _retry;
+
+        // we could catch SqlException and check Class and Number properties but MiniBus doesn't just deal with Sql Server,
+        // it could be queue errors, or network, etc so the alternative is to just check the Message property for key words
+        bool IsRecoverable(Exception ex)
+        {
+            return ex.Message.Contains("transport-level error") || ex.Message.Contains("deadlocked") || ex.Message.Contains("timeout");
+        }
     }
 }
