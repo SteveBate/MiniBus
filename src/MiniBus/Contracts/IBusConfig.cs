@@ -20,6 +20,7 @@ namespace MiniBus.Contracts
         bool AutoPurgeSystemJournal { get; set; }
         TimeSpan TimeToBeReceived { get; set; }
         bool UseJournalQueue { get; set; }
+        bool UseDeadLetterQueue { get; set; }
         bool EnvironmentalErrorsOnly { get; set; }
     }
 }

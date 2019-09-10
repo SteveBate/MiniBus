@@ -22,6 +22,7 @@ namespace MiniBus.Tests.Fakes
         public bool AutoPurgeSystemJournal { get; set; }
         public TimeSpan TimeToBeReceived { get; set; }
         public bool UseJournalQueue { get; set; }
+        public bool UseDeadLetterQueue { get; set; }
         public bool EnvironmentalErrorsOnly { get; set; }
     }
 }

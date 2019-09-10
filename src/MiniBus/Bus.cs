@@ -261,6 +261,7 @@ namespace MiniBus
                 Body = dto,
                 AcknowledgeType = AcknowledgeTypes.FullReachQueue | AcknowledgeTypes.FullReceive,
                 UseJournalQueue = _config.UseJournalQueue,
+                UseDeadLetterQueue = _config.UseDeadLetterQueue,
                 TimeToBeReceived = _config.TimeToBeReceived == TimeSpan.Zero ? MessageQueue.InfiniteTimeout : _config.TimeToBeReceived,
                 Formatter = _config.JsonSerialization ? (IMessageFormatter)new JsonFormatter<T>() : new XmlMessageFormatter(new[] { typeof(T) }),
                 Label = Guid.NewGuid().ToString(),

@@ -27,6 +27,7 @@ namespace MiniBus
         public List<Action<string>> ErrorActions { get; set; }
         public bool AutoPurgeSystemJournal { get; set; }
         public bool UseJournalQueue { get; set; }
+        public bool UseDeadLetterQueue { get; set; }
         public bool EnvironmentalErrorsOnly { get; set; }
     }
 }
