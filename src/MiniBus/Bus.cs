@@ -33,16 +33,18 @@ namespace MiniBus
         }
 
         /// <summary>
-        /// Takes a given type T and serializes it to json before
-        /// wrapping it in an MSMQ message and placing it on a queue.
+        /// Takes a given type T and serializes it to json before wrapping it in an MSMQ message and placing it on a queue.
         /// For the lifetime of the bus, if muliple queues are defined then each time Send is invoked:
-        /// a) if AutoDistributeOnSend is true then a message is placed on the next queue in the list in a round-robin fashion
-        /// b) otherwise a message is placed on all queues
+        /// a) if a destination has been passed in, send to that queue only
+        /// b) or if AutoDistributeOnSend is true then a message is placed on the next queue in the list in a round-robin fashion
+        /// c) otherwise a message is placed on all queues
         /// </summary>
-        public void Send<T>(T dto)
+        public void Send<T>(T dto, string destination = "")
         {
             GuardAgainstInvalidWriteQueues();
             GuardAgainstInvalidErrorQueue();
+
+            destination = stripRemoteFrom(destination);
 
             // configure the pipeline for sending a message
             var pipe = new PipeLine<MessageContext>();
@@ -51,20 +53,33 @@ namespace MiniBus
             pipe.AddAspect(new MoveToErrorQueueAspect<MessageContext>());
             pipe.Register(new SendMessage());
 
+            // if destination passed in override the configured bus, assert that the destination is known and send to it
+            if (!string.IsNullOrEmpty(destination) && !string.IsNullOrWhiteSpace(destination))
+            {
+                GuardAgainstUnknownQueue(destination);
+
+                var queue = _writeQueues.First(q => q.FormatName.EndsWith(destination));
+                var message = CreateMsmqMessageFromDto(dto);
+                var ctx = new MessageContext { Message = message, Config = _config, WriteQueue = queue, ErrorQueue = _errorQueue, OpType = SendOperation, OnStep = LogMessage, OnComplete = SetNextQueueIndex };
+                pipe.Invoke(ctx);
+                return;
+            }
+
+            // if applicable, send to the next queue as we carry out load balancing in a round robin fashion
             if (_config.AutoDistributeOnSend)
             {
                 var message = CreateMsmqMessageFromDto(dto);
                 var ctx = new MessageContext { Message = message, Config = _config, WriteQueue = _writeQueues.ElementAt(_nextQueue), ErrorQueue = _errorQueue, OpType = SendOperation, OnStep = LogMessage, OnComplete = SetNextQueueIndex };
                 pipe.Invoke(ctx);
+                return;
             }
-            else
+
+            // otherwise send the same message to all defined write queues
+            foreach (var writeQueue in _writeQueues)
             {
-                foreach (var writeQueue in _writeQueues)
-                {
-                    var message = CreateMsmqMessageFromDto(dto);
-                    var ctx = new MessageContext { Message = message, Config = _config, WriteQueue = writeQueue, ErrorQueue = _errorQueue, OpType = SendOperation, OnStep = LogMessage };
-                    pipe.Invoke(ctx);
-                }
+                var message = CreateMsmqMessageFromDto(dto);
+                var ctx = new MessageContext { Message = message, Config = _config, WriteQueue = writeQueue, ErrorQueue = _errorQueue, OpType = SendOperation, OnStep = LogMessage };
+                pipe.Invoke(ctx);
             }
         }
 
@@ -281,6 +296,15 @@ namespace MiniBus
             }
         }
 
+        void GuardAgainstUnknownQueue(string destination)
+        {
+            bool exists = _writeQueues.Any(q => q.FormatName.EndsWith(destination));
+            if (!exists)
+            {
+                throw new BusException($"destination: '{destination}' must be in the list of queues defined by the BusBuilder config via WriteQueue or WriteQueues");
+            }
+        }
+
         void Dispose(bool disposing)
         {
             if (_disposed) {return;}
@@ -304,6 +328,20 @@ namespace MiniBus
         void LogMessage(string text)
         {
             _logger.Log(text);
+        }
+
+        string stripRemoteFrom(string destination)
+        {
+            string result = destination;
+
+            // remove remote machine part if any
+            if (destination.Contains("@"))
+            {
+                int index = destination.IndexOf("@");
+                result = destination.Substring(0, index);
+            }
+
+            return result;
         }
 
         readonly IMessageQueue _readQueue;

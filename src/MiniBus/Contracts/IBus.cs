@@ -6,7 +6,7 @@ namespace MiniBus.Contracts
     {
         void Copy(string messageId);
         void RegisterHandler<T>(IHandleMessage<T> handler);
-        void Send<T>(T message);
+        void Send<T>(T message, string destination = "");
         void Receive<T>();
         void ReceiveAsync<T>();
         void ReturnAllErrorMessages();

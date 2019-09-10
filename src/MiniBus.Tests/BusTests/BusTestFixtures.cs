@@ -77,6 +77,32 @@ namespace MiniBus.Tests.BusTests
         }
 
         [Test]
+        public void Should_place_on_requested_queue_when_destination_passed_in_and_queue_is_known()
+        {
+            var msg = new FakeDto();
+            var writeQueues = new[] { new FakeValidMessageQueue("writeQueue1"), new FakeValidMessageQueue("writeQueue2"), new FakeValidMessageQueue("writeQueue3") };
+            var bus = new Bus(new FakeBusConfig(), new NullLogger(), new FakeValidMessageQueue("errorQueue"), new FakeValidMessageQueue("readQueue"), writeQueues);
+
+            bus.Send(msg, "writeQueue2");
+
+            Assert.That(writeQueues[0].Count, Is.EqualTo(0));
+            Assert.That(writeQueues[1].Count, Is.EqualTo(1));
+            Assert.That(writeQueues[2].Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Should_throw_when_destination_passed_in_and_queue_is_not_known()
+        {
+            var msg = new FakeDto();
+            var writeQueues = new[] { new FakeValidMessageQueue("writeQueue1"), new FakeValidMessageQueue("writeQueue2"), new FakeValidMessageQueue("writeQueue3") };
+            var bus = new Bus(new FakeBusConfig(), new NullLogger(), new FakeValidMessageQueue("errorQueue"), new FakeValidMessageQueue("readQueue"), writeQueues);
+
+            var exception = Assert.Throws<BusException>(() => bus.Send(msg, "unknownQueue"));
+
+            Assert.That(exception.Message, Is.EqualTo("destination: 'unknownQueue' must be in the list of queues defined by the BusBuilder config via WriteQueue or WriteQueues"));
+        }
+
+        [Test]
         public void Should_log_all_steps_involved()
         {
             var logger = new FakeLogger();

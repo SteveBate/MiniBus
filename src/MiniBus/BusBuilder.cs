@@ -233,9 +233,9 @@ namespace MiniBus
             {
                 string machineName = GetMachineName(_config.ReadQueue);
                 string queueName = GetQueueName(_config.ReadQueue);
-                string readEndpointPath = FormatPathToQueue(LocalMachine, _config.ReadQueue);
+                string readEndpointPath = FormatPathToQueue(machineName, queueName);
 
-                CreateLocalEndpointOnDisk(LocalMachine, readEndpointPath);
+                CreateLocalEndpointOnDisk(machineName, readEndpointPath);
                 ValidateQueue(machineName, queueName, readEndpointPath);
                 CreateReadQueueFromPath(readEndpointPath);
             }
@@ -369,7 +369,7 @@ namespace MiniBus
         IMessageQueue _errorQueue;
         ILogMessages _logger = new NullLogger();
 
-        const string Ipaddress = "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+        const string Ipaddress = @"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b";
         const string LocalMachine = ".";
     }
 

@@ -61,6 +61,14 @@ var order = new PlaceOrder { o.OrderNumber = "N0232344", Description = "Fries an
 bus.Send(order);
 ```
 
+Alternatively, the Send method now allows via an override the ability to specify which of the previously configured queues to send to.
+
+```csharp
+bus.Send(order, "MiniBus.messages2@remotepc");
+```
+
+In this scenario the message will be sent once to the specified queue only and options such as AutoDistributeOnSend are ignored. This option gives the flexibility to send "Event" style messages when something interesting happens in your application. All that is required is that all possible destination queues are specified at the time the Bus is built.
+
 ####	 Receving
 
 Create a message handler by implementing the interface **IHandleMessage&lt;T&gt;**:
@@ -176,7 +184,7 @@ Sometimes you only want a message to be sent or received as part of a larger tra
 
 ##### * NumberOfRetries
 
-MiniBus by default will move a failed message to the error queue as soon as an error is detected. Sometimes, perhaps due to network latency in a web service call, the operation would succeed if tried again. The NumberOfRetries method let's you specify how many times MiniBus should retry the operation before giving up and moving the message to the error queue. Additionally, a new optional parameter, slidingRetryInterval has been added to allow a period of time to pass before a retry should occur.
+MiniBus by default will move a failed message to the error queue as soon as an error is detected. Sometimes, perhaps due to network latency in a web service call, the operation would succeed if tried again. The NumberOfRetries method let's you specify how many times MiniBus should retry the operation before giving up and moving the message to the error queue. Additionally, two optional parameters are avaible. The first, slidingRetryInterval, has been added to allow a period of time to pass before a retry should occur. The second, environmentalErrorsOnly, allows you to specify that retries should occur only when an error is believed to be recoverable and might succeed on the next attempt, for example, when a deadlock or timeout occurs. In general, errors that are caused by incorrect data are never going to succeed no matter how many attempts are made so should probably be allowed to fail instantly.
 
 ##### * AutoDistributeOnSend
 
