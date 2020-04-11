@@ -18,13 +18,16 @@ MiniBus offers the following features:
 * Automatically create local queues
 * Simple logging support
 * Return error messages back to the read queue
-* Copy message to one or more queues
+* Copy a message to one or more queues
+* View a message body to help debug contents
+* Delete a message by its id
 * Fail fast option
 * Discard failures
 
 ## Update
 
-The core of MiniBus has now been rewritten to both more maintainable, testable, and reliable.
+11/04/2020 - Nuget package no longer maintained or up-to-date. To get the latest, clone this repository and build it in Visual Studio.
+19/02/2018 - The core of MiniBus has now been rewritten to both more maintainable, testable, and reliable.
 
 ## How to use
 
@@ -213,6 +216,20 @@ Specifies whether a copy of the message should be stored on the originating PC
 ##### * TimeToBeReceived
 
 Specifies how long a message should exist on the queue for before automatically being removed and disposed
+
+#### Some useful IBus Operations
+
+##### * Copy
+
+Copy a message specified by its Id to another queue
+
+##### * Delete
+
+Delete a message specified by its Id from the Read queue
+
+##### * ViewMessageBody
+
+View the contents of a message specified by its Id as a plain string which can be pasted straight into a JSON or XML editor to assist with debugging
 
 ## Building the Source
 

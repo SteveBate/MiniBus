@@ -59,6 +59,8 @@
     <Compile Include="Core\PipeLine.cs" />
     <Compile Include="Exceptions\BusException.cs" />
     <Compile Include="Exceptions\QueueNotFoundException.cs" />
+    <Compile Include="Filters\ViewMessage.cs" />
+    <Compile Include="Formatters\BodyAsStringFormatter.cs" />
     <Compile Include="Formatters\JsonFormatter.cs" />
     <Compile Include="Contracts\IBusConfig.cs" />
     <Compile Include="Logging\NullLogger.cs" />

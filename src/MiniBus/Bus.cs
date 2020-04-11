@@ -184,6 +184,52 @@ namespace MiniBus
         }
 
         /// <summary>
+        /// Read specific message off the given read queue identified by the messageId parameter and do nothing, in effect deleting it
+        /// </summary>
+        /// <param name="messageId"></param>
+        public void Delete(string messageId)
+        {
+            GuardAgainstInvalidReadQueue();
+
+            try
+            {
+                _readQueue.ReceiveById(messageId, MessageQueueTransactionType.Single);
+            }
+            catch (Exception ex)
+            {
+                throw new BusException($"A problem occurred deleting message: {messageId} - error: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Peek specific message off the given read queue identified by the messageId parameter and log it out 
+        /// </summary>
+        /// <param name="messageId"></param>
+        public void ViewMessageBody(string messageId)
+        {
+            GuardAgainstInvalidReadQueue();
+
+            try
+            {
+                var pipe = new PipeLine<MessageContext>();
+                pipe.AddAspect(new TransactionAspect<MessageContext>());
+                pipe.AddAspect(new LoggingAspect<MessageContext>());
+                pipe.Register(new ViewMessage());
+
+                var message = _readQueue.PeekMessageBy(messageId);
+
+                var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, OpType = CopyOperation, OnStep = LogMessage };
+
+                ctx.Message.Formatter = new BodyAsStringFormatter();
+                pipe.Invoke(ctx);
+            }
+            catch (Exception ex)
+            {
+                throw new BusException($"A problem occurred viewing message: {messageId} - error: {ex}");
+            }
+        }
+
+        /// <summary>
         /// Read specific message off the defined error queue and move it to the user defined read queue
         /// </summary>
         public void ReturnErrorMessage(string id)
