@@ -27,6 +27,7 @@ MiniBus offers the following features:
 ## Update
 
 11/04/2020 - Nuget package no longer maintained or up-to-date. To get the latest, clone this repository and build it in Visual Studio.
+
 19/02/2018 - The core of MiniBus has now been rewritten to both more maintainable, testable, and reliable.
 
 ## How to use
