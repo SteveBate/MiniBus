@@ -218,7 +218,7 @@ namespace MiniBus
 
                 var message = _readQueue.PeekMessageBy(messageId);
 
-                var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, OpType = CopyOperation, OnStep = LogMessage };
+                var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, OpType = ViewOperation, OnStep = LogMessage };
 
                 ctx.Message.Formatter = new BodyAsStringFormatter();
                 pipe.Invoke(ctx);
@@ -401,6 +401,7 @@ namespace MiniBus
         const string ReceiveOperation = "RECEIVE";
         const string ReturnOperation = "RETURN_TO_SOURCE";
         const string CopyOperation = "COPY";
+        const string ViewOperation = "VIEW";
         readonly List<Delegate> _handlers = new List<Delegate>();
 
         int _nextQueue;
