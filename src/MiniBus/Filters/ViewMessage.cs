@@ -1,9 +1,17 @@
-﻿using MiniBus.Core;
+﻿using System;
+using MiniBus.Core;
 
 namespace MiniBus.Filters
 {
     internal class ViewMessage : IFilter<MessageContext>
     {
+        private readonly Action<string> _output;
+
+        public ViewMessage(Action<string> output)
+        {
+            _output = output;
+        }
+
         public void Execute(MessageContext ctx)
         {
             var payload = (string)ctx.Message.Body;
@@ -13,9 +21,8 @@ namespace MiniBus.Filters
                 stripped = stripped.Substring(1, stripped.Length - 2);
             }
             ctx.OnStep($"Message: {ctx.Message.Label} - peeked from queue: {ctx.ReadQueue.FormatName}");
-            ctx.OnStep("\n");
-            ctx.OnStep($"{stripped}");
-            ctx.OnStep("\n");
+
+            _output(stripped);
         }
     }
 }

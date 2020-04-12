@@ -13,6 +13,6 @@ namespace MiniBus.Contracts
         void ReturnAllErrorMessages();
         void ReturnErrorMessage(string id);
         void StopReceiving();
-        void ViewMessageBody(string messageId);
+        string ViewMessageBody(string messageId);
     }
 }

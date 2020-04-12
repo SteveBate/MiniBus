@@ -202,26 +202,26 @@ namespace MiniBus
         }
 
         /// <summary>
-        /// Peek specific message off the given read queue identified by the messageId parameter and log it out 
+        /// Peek specific message off the given read queue identified by the messageId parameter and return the body as a string 
         /// </summary>
-        /// <param name="messageId"></param>
-        public void ViewMessageBody(string messageId)
+        public string ViewMessageBody(string messageId)
         {
             GuardAgainstInvalidReadQueue();
 
             try
             {
+                string bodyAsString = string.Empty;
                 var pipe = new PipeLine<MessageContext>();
                 pipe.AddAspect(new TransactionAspect<MessageContext>());
                 pipe.AddAspect(new LoggingAspect<MessageContext>());
-                pipe.Register(new ViewMessage());
+                pipe.Register(new ViewMessage(s => bodyAsString = s));
 
                 var message = _readQueue.PeekMessageBy(messageId);
-
                 var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, OpType = ViewOperation, OnStep = LogMessage };
-
                 ctx.Message.Formatter = new BodyAsStringFormatter();
                 pipe.Invoke(ctx);
+
+                return bodyAsString;
             }
             catch (Exception ex)
             {
