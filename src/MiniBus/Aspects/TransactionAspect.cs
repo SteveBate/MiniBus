@@ -10,7 +10,7 @@ namespace MiniBus.Aspects
         {
             ctx.OnStep($"Message: {ctx.Message.Label} - Transaction started");
 
-            using (var scope = new TransactionScope(TransactionScopeOption.Required))
+            using (var scope = new TransactionScope(ctx.Config.RequireNewTransaction ? TransactionScopeOption.RequiresNew : TransactionScopeOption.Required))
             {
                 try
                 {

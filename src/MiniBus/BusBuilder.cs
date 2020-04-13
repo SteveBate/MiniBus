@@ -104,9 +104,10 @@ namespace MiniBus
         /// EnlistInAmbientTransactions - Specify this option to join an existing transaction and
         /// ensure all operations are either committed or rolled back together
         /// </summary>
-        public BusBuilder EnlistInAmbientTransactions()
+        public BusBuilder EnlistInAmbientTransactions(bool requireNew = false)
         {
             _config.EnlistInAmbientTransactions = true;
+            _config.RequireNewTransaction = requireNew;
             return this;
         }
 

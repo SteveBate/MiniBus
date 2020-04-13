@@ -29,5 +29,6 @@ namespace MiniBus
         public bool UseJournalQueue { get; set; }
         public bool UseDeadLetterQueue { get; set; }
         public bool EnvironmentalErrorsOnly { get; set; }
+        public bool RequireNewTransaction { get; set; }
     }
 }

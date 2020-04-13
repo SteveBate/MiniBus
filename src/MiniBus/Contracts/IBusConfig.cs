@@ -22,5 +22,6 @@ namespace MiniBus.Contracts
         bool UseJournalQueue { get; set; }
         bool UseDeadLetterQueue { get; set; }
         bool EnvironmentalErrorsOnly { get; set; }
+        bool RequireNewTransaction { get; set; }
     }
 }
