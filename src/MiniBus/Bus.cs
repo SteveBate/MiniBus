@@ -115,6 +115,31 @@ namespace MiniBus
         }
 
         /// <summary>
+        /// Reads a specific message off a queue, deserializes it into the 
+        /// specified type T and invokes registered handlers.
+        /// </summary>
+        public void ReceiveOne<T>(string id)
+        {
+            GuardAgainstInvalidReadQueue();
+            GuardAgainstInvalidErrorQueue();
+
+            // configure the pipeline for receiving messages
+            var pipe = new PipeLine<MessageContext>();
+            pipe.AddAspect(new FailFastAspect<MessageContext>());
+            pipe.AddAspect(new DiscardAspect<MessageContext>());
+            pipe.AddAspect(new TransactionAspect<MessageContext>());
+            pipe.AddAspect(new LoggingAspect<MessageContext>());
+            pipe.AddAspect(new MoveToErrorQueueAspect<MessageContext>());
+            pipe.AddAspect(new RemoveFromReadQueueAspect<MessageContext>());
+            pipe.AddAspect(new RetryAspect<MessageContext>());
+            pipe.Register(new InvokeUserHandlers<T>());
+
+            Message message = _readQueue.PeekMessageBy(id);
+            var ctx = new MessageContext { Message = message, Config = _config, ReadQueue = _readQueue, ErrorQueue = _errorQueue, Handlers = _handlers, OpType = ReceiveOperation, OnStep = LogMessage };
+            pipe.Invoke(ctx);
+        }
+
+        /// <summary>
         /// Reads messages off a queue as they arrive, deserializes them into the
         /// specified type T and invokes registered handlers. This operation is
         /// asynchnronous meaning registered handlers will be invoked on the

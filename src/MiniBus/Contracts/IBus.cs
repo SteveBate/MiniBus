@@ -9,6 +9,7 @@ namespace MiniBus.Contracts
         void RegisterHandler<T>(IHandleMessage<T> handler);
         void Send<T>(T message, string destination = "");
         void Receive<T>();
+        void ReceiveOne<T>(string id);
         void ReceiveAsync<T>();
         void ReturnAllErrorMessages();
         void ReturnErrorMessage(string id);
