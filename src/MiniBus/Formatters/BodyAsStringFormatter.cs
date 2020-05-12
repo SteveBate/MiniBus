@@ -43,6 +43,7 @@ namespace MiniBus.Formatters
                     .Replace("\\n", "")
                     .Replace("\"{", "{")
                     .Replace("}\"", "}")
+                    .Replace("\\t", "")
                     .Replace("\\r", "");
             }            
         }
