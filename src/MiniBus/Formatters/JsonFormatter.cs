@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Messaging;
-using System.Text;
-using MiniBus.Serialization;
 using System.IO;
+using System.Text;
+using MSMQ.Messaging;
+using MiniBus.Serialization;
 
 namespace MiniBus.Formatters
 {

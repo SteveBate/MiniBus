@@ -1,18 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBus", "src\MiniBus\MiniBus.csproj", "{C1F043F5-20BC-4D74-A64B-1013D2EE7DE1}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{090F8B10-B81E-4C36-9ADB-08F72F7FCDD0}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniBus", "src\MiniBus\MiniBus.csproj", "{C1F043F5-20BC-4D74-A64B-1013D2EE7DE1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBus.Sample", "src\MiniBus.Sample\MiniBus.Sample.csproj", "{367CAB86-77AE-4BDA-8EEA-59F66FFF16AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBus.Tests", "src\MiniBus.Tests\MiniBus.Tests.csproj", "{5F4116D2-8AB2-4A3F-940F-113761150E19}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniBus.Tests", "src\MiniBus.Tests\MiniBus.Tests.csproj", "{5F4116D2-8AB2-4A3F-940F-113761150E19}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,5 +30,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3E74C6BF-5541-4BD6-8ABA-E6684319E067}
 	EndGlobalSection
 EndGlobal

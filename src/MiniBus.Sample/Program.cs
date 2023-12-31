@@ -1,18 +1,38 @@
-﻿using MiniBus.Contracts;
-using log4net;
-using System;
+﻿using System;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security.Principal;
 using System.Threading;
 using System.Transactions;
+using log4net;
+using MiniBus.Contracts;
 
 namespace MiniBus.Sample
 {
+    [SupportedOSPlatform("windows")]
     class Program
     {
-        static IBus _bus;
+        static IBus? _bus;
 
         static void Main()
         {
             bool exit = false;
+
+            if (false == RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Console.WriteLine("MiniBus runs on Windows only!");
+                return;
+            }
+            else 
+            {   
+                TransactionManager.ImplicitDistributedTransactions = true;  // MiniBus needs legcacy transaction elevation semantics
+
+                if (false == new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole("Administrators"))
+                {
+                    Console.WriteLine("This application must be run as Admin.");
+                    return;
+                }
+            }
 
             do
             {
@@ -145,7 +165,7 @@ namespace MiniBus.Sample
 
             for (int i = 0; i < 4; i++)
             {
-                var p = new Person { Name = "Bob", Age = 20};
+                var p = new Person { Name = "Bob", Age = i};
                 _bus.Send(p);
             }
 
@@ -327,7 +347,7 @@ namespace MiniBus.Sample
                 .CreateBus();
 
             Console.WriteLine("\nEnter the id of the message to be returned or type 'all' for all messages");
-            string messageid = Console.ReadLine();
+            string? messageid = Console.ReadLine();
 
             try
             {
@@ -416,7 +436,7 @@ namespace MiniBus.Sample
 
     public class Person
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public int Age { get; set; }
         public override string ToString()
         {

@@ -1,8 +1,8 @@
-﻿using MiniBus.Contracts;
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Messaging;
+using MSMQ.Messaging;
+using MiniBus.Contracts;
 
 namespace MiniBus.Tests.Fakes
 {

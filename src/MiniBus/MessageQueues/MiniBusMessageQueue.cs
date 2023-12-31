@@ -1,8 +1,8 @@
-﻿using MiniBus.Contracts;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Messaging;
 using System.ServiceProcess;
+using MSMQ.Messaging;
+using MiniBus.Contracts;
 
 namespace MiniBus.MessageQueues
 {

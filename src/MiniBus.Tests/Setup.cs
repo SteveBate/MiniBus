@@ -1,15 +1,15 @@
-﻿using MiniBus.Tests.Fakes;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Messaging;
+using MSMQ.Messaging;
+using NUnit.Framework;
+using MiniBus.Tests.Fakes;
 
 namespace MiniBus.Tests
 {
     public abstract class Setup
     {
 
-        [TestFixtureSetUp]
+        [SetUp]
         public void Run_once_before_all_tests()
         {
             ThreeHandlers = new List<Delegate>

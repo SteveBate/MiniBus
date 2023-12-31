@@ -1,4 +1,4 @@
-﻿using System.Messaging;
+﻿using MSMQ.Messaging;
 using MiniBus.Core;
 
 namespace MiniBus.Aspects

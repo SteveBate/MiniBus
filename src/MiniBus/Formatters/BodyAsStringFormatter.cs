@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Messaging;
 using System.Text;
+using MSMQ.Messaging;
 
 namespace MiniBus.Formatters
 {

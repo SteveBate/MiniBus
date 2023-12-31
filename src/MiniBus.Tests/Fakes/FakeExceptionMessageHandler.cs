@@ -1,6 +1,6 @@
-﻿using MiniBus.Contracts;
-using System;
-using System.Messaging;
+﻿using System;
+using MSMQ.Messaging;
+using MiniBus.Contracts;
 
 namespace MiniBus.Tests.Fakes
 {

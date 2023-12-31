@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Messaging;
 using System.Threading;
+using MSMQ.Messaging;
 using MiniBus.Core;
 
 namespace MiniBus.Aspects

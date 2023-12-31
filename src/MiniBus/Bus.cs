@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Messaging;
+using MSMQ.Messaging;
 using MiniBus.Aspects;
 using MiniBus.Contracts;
 using MiniBus.Exceptions;

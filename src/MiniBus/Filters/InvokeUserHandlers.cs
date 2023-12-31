@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Messaging;
+using MSMQ.Messaging;
 using MiniBus.Core;
 using MiniBus.Formatters;
 

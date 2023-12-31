@@ -112,12 +112,12 @@ namespace MiniBus.Tests.BusTests
 
             bus.Send(msg);
 
-            Assert.That(logger[0], Is.StringContaining("Transaction started"));
-            Assert.That(logger[1], Is.StringContaining("Started SEND Operation"));
-            Assert.That(logger[2], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[3], Is.StringContaining("Sent to queue: writeQueue1"));
-            Assert.That(logger[4], Is.StringContaining("Completed SEND Operation"));
-            Assert.That(logger[5], Is.StringContaining("Transaction committed"));
+            Assert.That(logger[0], Does.Contain("Transaction started"));
+            Assert.That(logger[1], Does.Contain("Started SEND Operation"));
+            Assert.That(logger[2], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[3], Does.Contain("Sent to queue: writeQueue1"));
+            Assert.That(logger[4], Does.Contain("Completed SEND Operation"));
+            Assert.That(logger[5], Does.Contain("Transaction committed"));
         }
 
         [Test]
@@ -202,12 +202,12 @@ namespace MiniBus.Tests.BusTests
 
             bus.ReturnAllErrorMessages();
 
-            Assert.That(logger[0], Is.StringContaining("Transaction started"));
-            Assert.That(logger[1], Is.StringContaining("Started RETURN_TO_SOURCE Operation"));
-            Assert.That(logger[2], Is.StringContaining("Removing from queue: errorQueue"));
-            Assert.That(logger[3], Is.StringContaining("Sending to queue: readQueue"));
-            Assert.That(logger[4], Is.StringContaining("Completed RETURN_TO_SOURCE Operation"));
-            Assert.That(logger[5], Is.StringContaining("Transaction committed"));
+            Assert.That(logger[0], Does.Contain("Transaction started"));
+            Assert.That(logger[1], Does.Contain("Started RETURN_TO_SOURCE Operation"));
+            Assert.That(logger[2], Does.Contain("Removing from queue: errorQueue"));
+            Assert.That(logger[3], Does.Contain("Sending to queue: readQueue"));
+            Assert.That(logger[4], Does.Contain("Completed RETURN_TO_SOURCE Operation"));
+            Assert.That(logger[5], Does.Contain("Transaction committed"));
         }
         
         [Test]
@@ -262,12 +262,12 @@ namespace MiniBus.Tests.BusTests
 
             bus.Copy("00000-00000-00000-00000\0000");
 
-            Assert.That(logger[0], Is.StringContaining("Transaction started"));
-            Assert.That(logger[1], Is.StringContaining("Started COPY Operation"));
-            Assert.That(logger[2], Is.StringContaining("copied from queue: readQueue"));
-            Assert.That(logger[3], Is.StringContaining("Sending to queue: writeQueue1"));
-            Assert.That(logger[4], Is.StringContaining("Completed COPY Operation"));
-            Assert.That(logger[5], Is.StringContaining("Transaction committed"));
+            Assert.That(logger[0], Does.Contain("Transaction started"));
+            Assert.That(logger[1], Does.Contain("Started COPY Operation"));
+            Assert.That(logger[2], Does.Contain("copied from queue: readQueue"));
+            Assert.That(logger[3], Does.Contain("Sending to queue: writeQueue1"));
+            Assert.That(logger[4], Does.Contain("Completed COPY Operation"));
+            Assert.That(logger[5], Does.Contain("Transaction committed"));
         }
     }
 
@@ -310,13 +310,13 @@ namespace MiniBus.Tests.BusTests
 
             bus.Receive<FakeDto>();
 
-            Assert.That(logger[0], Is.StringContaining("Transaction started"));
-            Assert.That(logger[1], Is.StringContaining("Started RECEIVE Operation"));
-            Assert.That(logger[2], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[3], Is.StringContaining("Invoking registered handler"));
-            Assert.That(logger[4], Is.StringContaining("Removing from read queue: readQueue"));
-            Assert.That(logger[5], Is.StringContaining("Completed RECEIVE Operation"));
-            Assert.That(logger[6], Is.StringContaining("Transaction committed"));
+            Assert.That(logger[0], Does.Contain("Transaction started"));
+            Assert.That(logger[1], Does.Contain("Started RECEIVE Operation"));
+            Assert.That(logger[2], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[3], Does.Contain("Invoking registered handler"));
+            Assert.That(logger[4], Does.Contain("Removing from read queue: readQueue"));
+            Assert.That(logger[5], Does.Contain("Completed RECEIVE Operation"));
+            Assert.That(logger[6], Does.Contain("Transaction committed"));
         }
 
         [Test]
@@ -359,7 +359,7 @@ namespace MiniBus.Tests.BusTests
 
             Assert.That(errorQueue.Count, Is.EqualTo(0));
             Assert.That(readQueue.Count, Is.EqualTo(2));
-            Assert.That(logger[10], Is.StringContaining("FailFast option enabled - Queue processing halted"));
+            Assert.That(logger[10], Does.Contain("FailFast option enabled - Queue processing halted"));
         }
 
         [Test]
@@ -376,8 +376,8 @@ namespace MiniBus.Tests.BusTests
 
             Assert.That(errorQueue.Count, Is.EqualTo(0));
             Assert.That(readQueue.Count, Is.EqualTo(0));
-            Assert.That(logger[11], Is.StringContaining("DiscardFailures option enabled - Payload discarded"));
-            Assert.That(logger[23], Is.StringContaining("DiscardFailures option enabled - Payload discarded"));
+            Assert.That(logger[11], Does.Contain("DiscardFailures option enabled - Payload discarded"));
+            Assert.That(logger[23], Does.Contain("DiscardFailures option enabled - Payload discarded"));
         }
 
         [Test]
@@ -391,25 +391,25 @@ namespace MiniBus.Tests.BusTests
 
             bus.Receive<FakeDto>();
 
-            Assert.That(logger[0], Is.StringContaining("Transaction started"));
-            Assert.That(logger[1], Is.StringContaining("Started RECEIVE Operation"));
-            Assert.That(logger[2], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[3], Is.StringContaining("Invoking registered handler"));
-            Assert.That(logger[4], Is.StringContaining("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
-            Assert.That(logger[5], Is.StringContaining("Retry attempt 1"));
-            Assert.That(logger[6], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[7], Is.StringContaining("Invoking registered handler"));
-            Assert.That(logger[8], Is.StringContaining("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
-            Assert.That(logger[9], Is.StringContaining("Retry attempt 2"));
-            Assert.That(logger[10], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[11], Is.StringContaining("Invoking registered handler"));
-            Assert.That(logger[12], Is.StringContaining("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
-            Assert.That(logger[13], Is.StringContaining("Invocation failed"));
-            Assert.That(logger[14], Is.StringContaining("Removing from read queue: readQueue"));
-            Assert.That(logger[15], Is.StringContaining("Moving to error queue: errorQueue"));
-            Assert.That(logger[16], Is.StringContaining("EXCEPTION - The method or operation is not implemented."));
-            Assert.That(logger[18], Is.StringContaining("Completed RECEIVE Operation"));
-            Assert.That(logger[19], Is.StringContaining("Transaction rolled back"));
+            Assert.That(logger[0], Does.Contain("Transaction started"));
+            Assert.That(logger[1], Does.Contain("Started RECEIVE Operation"));
+            Assert.That(logger[2], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[3], Does.Contain("Invoking registered handler"));
+            Assert.That(logger[4], Does.Contain("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
+            Assert.That(logger[5], Does.Contain("Retry attempt 1"));
+            Assert.That(logger[6], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[7], Does.Contain("Invoking registered handler"));
+            Assert.That(logger[8], Does.Contain("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
+            Assert.That(logger[9], Does.Contain("Retry attempt 2"));
+            Assert.That(logger[10], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[11], Does.Contain("Invoking registered handler"));
+            Assert.That(logger[12], Does.Contain("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
+            Assert.That(logger[13], Does.Contain("Invocation failed"));
+            Assert.That(logger[14], Does.Contain("Removing from read queue: readQueue"));
+            Assert.That(logger[15], Does.Contain("Moving to error queue: errorQueue"));
+            Assert.That(logger[16], Does.Contain("EXCEPTION - The method or operation is not implemented."));
+            Assert.That(logger[18], Does.Contain("Completed RECEIVE Operation"));
+            Assert.That(logger[19], Does.Contain("Transaction rolled back"));
         }
 
         [Test]
@@ -423,17 +423,17 @@ namespace MiniBus.Tests.BusTests
 
             bus.Receive<FakeDto>();
 
-            Assert.That(logger[0], Is.StringContaining("Transaction started"));
-            Assert.That(logger[1], Is.StringContaining("Started RECEIVE Operation"));
-            Assert.That(logger[2], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[3], Is.StringContaining("Invoking registered handler"));
-            Assert.That(logger[4], Is.StringContaining("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
-            Assert.That(logger[5], Is.StringContaining("Invocation failed"));
-            Assert.That(logger[6], Is.StringContaining("Removing from read queue: readQueue"));
-            Assert.That(logger[7], Is.StringContaining("Moving to error queue: errorQueue"));
-            Assert.That(logger[8], Is.StringContaining("EXCEPTION - The method or operation is not implemented."));
-            Assert.That(logger[10], Is.StringContaining("Completed RECEIVE Operation"));
-            Assert.That(logger[11], Is.StringContaining("Transaction rolled back"));
+            Assert.That(logger[0], Does.Contain("Transaction started"));
+            Assert.That(logger[1], Does.Contain("Started RECEIVE Operation"));
+            Assert.That(logger[2], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[3], Does.Contain("Invoking registered handler"));
+            Assert.That(logger[4], Does.Contain("TRANSACTION STATUS: Active - REASON: The method or operation is not implemented."));
+            Assert.That(logger[5], Does.Contain("Invocation failed"));
+            Assert.That(logger[6], Does.Contain("Removing from read queue: readQueue"));
+            Assert.That(logger[7], Does.Contain("Moving to error queue: errorQueue"));
+            Assert.That(logger[8], Does.Contain("EXCEPTION - The method or operation is not implemented."));
+            Assert.That(logger[10], Does.Contain("Completed RECEIVE Operation"));
+            Assert.That(logger[11], Does.Contain("Transaction rolled back"));
         }
 
         [Test]
@@ -447,25 +447,25 @@ namespace MiniBus.Tests.BusTests
 
             bus.Receive<FakeDto>();
 
-            Assert.That(logger[0], Is.StringContaining("Transaction started"));
-            Assert.That(logger[1], Is.StringContaining("Started RECEIVE Operation"));
-            Assert.That(logger[2], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[3], Is.StringContaining("Invoking registered handler"));
-            Assert.That(logger[4], Is.StringContaining("TRANSACTION STATUS: Active - REASON: deadlocked"));
-            Assert.That(logger[5], Is.StringContaining("Retry attempt 1"));
-            Assert.That(logger[6], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[7], Is.StringContaining("Invoking registered handler"));
-            Assert.That(logger[8], Is.StringContaining("TRANSACTION STATUS: Active - REASON: deadlocked"));
-            Assert.That(logger[9], Is.StringContaining("Retry attempt 2"));
-            Assert.That(logger[10], Is.StringContaining("Payload: FakeDto"));
-            Assert.That(logger[11], Is.StringContaining("Invoking registered handler"));
-            Assert.That(logger[12], Is.StringContaining("TRANSACTION STATUS: Active - REASON: deadlocked"));
-            Assert.That(logger[13], Is.StringContaining("Invocation failed"));
-            Assert.That(logger[14], Is.StringContaining("Removing from read queue: readQueue"));
-            Assert.That(logger[15], Is.StringContaining("Moving to error queue: errorQueue"));
-            Assert.That(logger[16], Is.StringContaining("EXCEPTION - deadlocked"));
-            Assert.That(logger[18], Is.StringContaining("Completed RECEIVE Operation"));
-            Assert.That(logger[19], Is.StringContaining("Transaction rolled back"));
+            Assert.That(logger[0], Does.Contain("Transaction started"));
+            Assert.That(logger[1], Does.Contain("Started RECEIVE Operation"));
+            Assert.That(logger[2], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[3], Does.Contain("Invoking registered handler"));
+            Assert.That(logger[4], Does.Contain("TRANSACTION STATUS: Active - REASON: deadlocked"));
+            Assert.That(logger[5], Does.Contain("Retry attempt 1"));
+            Assert.That(logger[6], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[7], Does.Contain("Invoking registered handler"));
+            Assert.That(logger[8], Does.Contain("TRANSACTION STATUS: Active - REASON: deadlocked"));
+            Assert.That(logger[9], Does.Contain("Retry attempt 2"));
+            Assert.That(logger[10], Does.Contain("Payload: FakeDto"));
+            Assert.That(logger[11], Does.Contain("Invoking registered handler"));
+            Assert.That(logger[12], Does.Contain("TRANSACTION STATUS: Active - REASON: deadlocked"));
+            Assert.That(logger[13], Does.Contain("Invocation failed"));
+            Assert.That(logger[14], Does.Contain("Removing from read queue: readQueue"));
+            Assert.That(logger[15], Does.Contain("Moving to error queue: errorQueue"));
+            Assert.That(logger[16], Does.Contain("EXCEPTION - deadlocked"));
+            Assert.That(logger[18], Does.Contain("Completed RECEIVE Operation"));
+            Assert.That(logger[19], Does.Contain("Transaction rolled back"));
         }
     }
 

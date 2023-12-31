@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Linq;
-using System.Messaging;
 using System.Security.Principal;
-using MiniBus.Contracts;
-using MiniBus.Logging;
-using MiniBus.Exceptions;
 using System.Threading;
-using MiniBus.MessageQueues;
 using System.Collections.Generic;
 using System.ServiceProcess;
 using System.Text.RegularExpressions;
+using MSMQ.Messaging;
+using MiniBus.Contracts;
+using MiniBus.Logging;
+using MiniBus.Exceptions;
+using MiniBus.MessageQueues;
 
 namespace MiniBus
 {
@@ -307,7 +307,7 @@ namespace MiniBus
                 using (var queue = MessageQueue.Create(path, true))
                 {
                     string adminName = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null).Translate(typeof(NTAccount)).ToString();
-                    queue.SetPermissions(Thread.CurrentPrincipal.Identity.Name, MessageQueueAccessRights.GenericWrite);
+                    queue.SetPermissions(new WindowsPrincipal(WindowsIdentity.GetCurrent()).Identity.Name, MessageQueueAccessRights.GenericWrite);
                     queue.SetPermissions(adminName, MessageQueueAccessRights.FullControl);
                 }
             }
@@ -373,5 +373,4 @@ namespace MiniBus
         const string Ipaddress = @"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b";
         const string LocalMachine = ".";
     }
-
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Messaging;
+using MSMQ.Messaging;
 using MiniBus.Contracts;
 using MiniBus.Core;
 

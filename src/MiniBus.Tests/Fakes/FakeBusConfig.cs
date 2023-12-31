@@ -1,6 +1,6 @@
-﻿using MiniBus.Contracts;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using MiniBus.Contracts;
 
 namespace MiniBus.Tests.Fakes
 {
