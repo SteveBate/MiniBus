@@ -231,12 +231,12 @@ View the contents of a message specified by its Id as a plain string which can b
 If you want to build the source, clone the repository, and open up MiniBus.sln.
 
 ```csharp
-git clone https://github.com/SteveBate/MiniBus.git
+git clone https://github.com/mikebouck/MiniBusCore.git
 explorer path/to/MiniBus/MiniBus.sln
 ```
 
 ## Supported Platforms
-MiniBusCore targets .NET Standard and with regard to MSMQ, Windows 7, 8, Server 2008 and above.
+MiniBusCore targets .NET Standard 2.0 and with regard to MSMQ, Windows 7, 8, Server 2008 and above.
 
 ## License
 [MIT License](http://opensource.org/licenses/MIT)
